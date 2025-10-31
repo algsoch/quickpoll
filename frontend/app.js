@@ -1,8 +1,22 @@
-// QuickPoll Frontend Application - v65 (Interactive Tag Input with Visual Chips + Cloudflare Cache Fix)
+// QuickPoll Frontend Application - v66 (Multi-platform deployment support)
 // Configuration
-const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.') || window.location.hostname.startsWith('10.')
-    ? `http://${window.location.hostname}:8080`
-    : 'https://api.algsoch.tech';  // Backend API on subdomain
+const API_BASE_URL = (() => {
+    const hostname = window.location.hostname;
+    
+    // Local development (localhost or LAN IP)
+    if (hostname === 'localhost' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
+        return `http://${hostname}:8080`;
+    }
+    
+    // Render deployment
+    if (hostname === 'quickpoll-frontend.onrender.com') {
+        return 'https://quickpoll-api.onrender.com';
+    }
+    
+    // Cloudflare tunnel / custom domain
+    return 'https://api.algsoch.tech';
+})();
+
 const WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
 
 // Reaction constants
