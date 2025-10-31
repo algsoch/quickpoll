@@ -1,0 +1,83 @@
+# Multi-stage Dockerfile for production-ready deployment
+
+# Stage 1: Base Python image
+FROM python:3.11-slim as base
+
+# Set environment variables
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PIP_DISABLE_PIP_VERSION_CHECK=1
+
+# Install system dependencies
+RUN apt-get update && apt-get install -y \
+    gcc \
+    postgresql-client \
+    curl \
+    && rm -rf /var/lib/apt/lists/*
+
+WORKDIR /app
+
+# Stage 2: Dependencies
+FROM base as dependencies
+
+# Copy requirements
+COPY requirements.txt .
+
+# Install Python dependencies
+RUN pip install --no-cache-dir -r requirements.txt
+
+# Stage 3: Development
+FROM dependencies as development
+
+# Copy application code
+COPY backend/ ./backend/
+COPY alembic/ ./alembic/
+COPY alembic.ini .
+COPY frontend/ ./frontend/
+
+# Expose ports
+EXPOSE 8000
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:8080/health || exit 1
+
+# Run with auto-reload
+CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8080", "--reload"]
+
+# Stage 4: Production
+FROM dependencies as production
+
+# Create non-root user
+RUN useradd -m -u 1000 appuser && \
+    mkdir -p /app && \
+    chown -R appuser:appuser /app
+
+# Copy application code
+COPY --chown=appuser:appuser backend/ ./backend/
+COPY --chown=appuser:appuser alembic/ ./alembic/
+COPY --chown=appuser:appuser alembic.ini .
+
+# Switch to non-root user
+USER appuser
+
+# Expose port (will be overridden by cloud provider)
+EXPOSE 8080
+
+# Health check
+HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
+    CMD curl -f http://localhost:${PORT:-8080}/health || exit 1
+
+# Run with gunicorn for production
+# Use PORT env var from cloud provider (Azure/Render) or default to 8080
+CMD gunicorn backend.main:app \
+    --workers 4 \
+    --worker-class uvicorn.workers.UvicornWorker \
+    --bind 0.0.0.0:${PORT:-8080} \
+    --access-logfile - \
+    --error-logfile - \
+    --log-level info \
+    --timeout 120 \
+    --keep-alive 5

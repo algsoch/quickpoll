@@ -52,8 +52,8 @@ docs/
 # CI/CD
 .github/
 
-# Frontend (if building backend only)
-frontend/
+# Frontend (commented out - needed for frontend Docker build)
+# frontend/
 
 # Alembic versions (include in image)
 # alembic/versions/
