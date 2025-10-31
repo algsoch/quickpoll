@@ -1,0 +1,38 @@
+Lyzr AI Full-Stack Developer Challenge
+Welcome to the Lyzr AI Full-Stack Developer Challenge!
+This challenge is designed to identify exceptional full-stack developers who can research, architect, and build working prototypes at rapid speed. You’ll get to demonstrate your expertise in Python, FastAPI, Next.js, React.js, TypeScript and modern UI frameworks like shadcn, while showcasing your creativity, technical depth, and problem-solving ability.
+You’ll choose one project from the list, research the necessary APIs or integrations, and deliver a fully functional prototype within 2–3 days.
+The goal is to evaluate your effort, speed, innovation, and end-to-end ownership.
+
+Key Skills This Challenge Tests:
+- Research and integration from multiple sources
+- Backend orchestration and API composition
+- Frontend design + responsive UI
+- Problem-solving and innovation
+- Attention to performance and user experience
+
+Deliverables:
+Hosted FastAPI backend (Render / Railway / Deta)(Optional)
+Hosted Next.js frontend (Vercel / Netlify)(Optional)
+GitHub repository with clear README
+Optional demo video (2–3 min)
+
+Assignment Details:
+QuickPoll: Real-Time Opinion Polling Platform
+Objective
+Build a platform where users can create polls, vote, like polls, and see live updates as other users interact.Requirements
+Users should be able to create polls with multiple options.
+Users should be able to submit votes for polls.
+Users should be able to like polls or other user interactions.
+The system should reflect updates live (votes, likes, or interactions) across all users.
+Design and implement a backend to manage polls, votes, likes, and related interactions.
+Design and implement a frontend that displays polls, results, and interactions in real time.
+Ensure the system is responsive, user-friendly, and visually clear.
+Deliverables
+GitHub repository with all source code (frontend + backend).
+Optional: Deployed live version accessible online.(Use free tier hosting services)
+README explaining:
+System design and architecture
+How to run the project locally
+Any research or APIs/resources used
+Optional: Short video walkthrough (2–3 minutes) demonstrating functionality and live updates.’

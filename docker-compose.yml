@@ -1,0 +1,80 @@
+version: '3.8'
+
+services:
+  # Backend API
+  backend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: development
+    container_name: quickpoll-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - DATABASE_URL=${DATABASE_URL:-postgresql+asyncpg://quickpoll:quickpoll@db:5432/quickpoll}
+      - SECRET_KEY=${SECRET_KEY:-dev-secret-key-change-in-production-minimum-32-chars}
+      - GEMINI_API_KEY=${GEMINI_API_KEY}
+      - ENVIRONMENT=development
+      - ALLOWED_ORIGINS=http://localhost:3000,http://localhost:8000,http://localhost:8080
+      - PORT=8080
+    env_file:
+      - .env
+    volumes:
+      - ./backend:/app/backend
+      - ./alembic:/app/alembic
+      - ./frontend:/app/frontend
+    depends_on:
+      db:
+        condition: service_healthy
+    networks:
+      - quickpoll-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  # PostgreSQL Database (for local development)
+  db:
+    image: postgres:15-alpine
+    container_name: quickpoll-db
+    environment:
+      POSTGRES_USER: quickpoll
+      POSTGRES_PASSWORD: quickpoll
+      POSTGRES_DB: quickpoll
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - quickpoll-network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U quickpoll"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Frontend (static file server for development)
+  frontend:
+    image: nginx:alpine
+    container_name: quickpoll-frontend
+    ports:
+      - "8000:80"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./nginx.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - backend
+    networks:
+      - quickpoll-network
+    restart: unless-stopped
+
+networks:
+  quickpoll-network:
+    driver: bridge
+
+volumes:
+  postgres_data:

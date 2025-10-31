@@ -1,0 +1,1112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QuickPoll - Real-time Polling App</title>
+    <link rel="stylesheet" href="styles.css?v=29">
+    <link rel="icon" type="image/png" href="public/images/fevicon.png">
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.9.2/dist/confetti.browser.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.min.js"></script>
+</head>
+<body>
+    <div id="app">
+        <!-- Header -->
+        <header class="header">
+            <div class="container">
+                <div class="header-content">
+                    <div class="logo-container">
+                        <div class="logo">
+                            <span class="logo-icon">📊</span>
+                            <span class="logo-text">QuickPoll</span>
+                        </div>
+                    </div>
+                    <nav class="nav">
+                        <button class="theme-toggle" id="themeToggle" title="Toggle dark mode">
+                            <span id="themeIcon">🌙</span>
+                        </button>
+                        <div id="guestMenu" class="guest-menu">
+                            <button class="btn btn-secondary" id="loginBtn">Login</button>
+                            <button class="btn btn-primary" id="signupBtn">Sign Up</button>
+                        </div>
+                        <div id="userMenu" class="user-menu" style="display: none;">
+                            <div class="nav-icons">
+                                <button class="btn btn-icon" id="notificationBtn" title="Notifications">
+                                    🔔
+                                    <span class="notification-badge" id="notificationBadge" style="display: none;">0</span>
+                                </button>
+                                <button class="btn btn-icon" id="badgesBtn" title="My Badges">
+                                    🏆
+                                    <span class="badge-count" id="badgeCount" style="display: none;">0</span>
+                                </button>
+                                <button class="btn btn-icon" id="profileBtn" title="My Profile">👤</button>
+                                <button class="btn btn-icon" id="helpBtn" title="Start Tour">❓</button>
+                                <span id="username"></span>
+                                <button class="btn btn-secondary" id="apiKeysBtn" title="API Keys">🔑 API Keys</button>
+                                <button class="btn btn-primary" id="createPollBtn">Create Poll</button>
+                                <button class="btn btn-secondary" id="logoutBtn">Logout</button>
+                            </div>
+                        </div>
+                    </nav>
+                </div>
+            </div>
+        </header>
+
+        <!-- Notification Dropdown -->
+        <div id="notificationDropdown" class="notification-dropdown" style="display: none;">
+            <div class="notification-header">
+                <h3>Notifications</h3>
+                <button class="btn-link" id="markAllReadBtn">Mark all read</button>
+            </div>
+            <div id="notificationList" class="notification-list">
+                <p class="loading">Loading notifications...</p>
+            </div>
+        </div>
+
+        <!-- Main Content -->
+        <main class="main">
+            <div class="container">
+                <!-- Welcome Section -->
+                <section id="welcomeSection" class="welcome-section">
+                    <h2>Welcome to QuickPoll</h2>
+                    <p>Create and share polls instantly. Get real-time results.</p>
+                </section>
+
+                <!-- Statistics Section -->
+                <section class="stats-section">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <div class="stat-icon">👥</div>
+                            <div class="stat-value" id="totalVisitors">-</div>
+                            <div class="stat-label">Total Visitors</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">✅</div>
+                            <div class="stat-value" id="totalRegistered">-</div>
+                            <div class="stat-label">Registered Users</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">�</div>
+                            <div class="stat-value" id="totalPolls">-</div>
+                            <div class="stat-label">Total Polls</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🟢</div>
+                            <div class="stat-value" id="activePolls">-</div>
+                            <div class="stat-label">Active Polls</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">🔴</div>
+                            <div class="stat-value" id="closedPolls">-</div>
+                            <div class="stat-label">Closed Polls</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-icon">�</div>
+                            <div class="stat-value" id="activeUsers">-</div>
+                            <div class="stat-label">Active Users (30d)</div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Live Activity Feed - TEMPORARILY HIDDEN -->
+                <section id="activityFeedSection" class="activity-feed-section" style="display: none;">
+                    <div class="section-header">
+                        <h2>
+                            <span class="activity-icon">⚡</span>
+                            Live Activity Feed
+                            <span class="live-indicator">🔴 LIVE</span>
+                        </h2>
+                        <div class="activity-filters">
+                            <button class="activity-filter-btn active" data-filter="all">All</button>
+                            <button class="activity-filter-btn" data-filter="polls">📊 Polls</button>
+                            <button class="activity-filter-btn" data-filter="votes">🗳️ Votes</button>
+                            <button class="activity-filter-btn" data-filter="comments">💬 Comments</button>
+                            <button class="activity-filter-btn" data-filter="trending">🔥 Trending</button>
+                        </div>
+                    </div>
+                    <div id="activityFeed" class="activity-feed">
+                        <p class="loading">Loading activity feed...</p>
+                    </div>
+                    <button id="loadMoreActivity" class="btn btn-secondary load-more-btn" style="display: none;">
+                        Load More
+                    </button>
+                </section>
+
+                <!-- Poll List -->
+                <section id="pollsSection" class="polls-section">
+                    <div class="section-header">
+                        <h2>Polls</h2>
+                        
+                        <!-- Search and Advanced Filters -->
+                        <div class="search-filter-bar">
+                            <div class="search-wrapper">
+                                <input type="text" id="searchInput" placeholder="🔍 Search polls by title, description, or tags..." class="search-input">
+                            </div>
+                            <div class="advanced-filters">
+                                <select id="sortSelect" class="sort-select">
+                                    <option value="newest">📅 Newest First</option>
+                                    <option value="oldest">📅 Oldest First</option>
+                                    <option value="most-voted">🗳️ Most Voted</option>
+                                    <option value="most-liked">❤️ Most Liked</option>
+                                </select>
+                                <input type="date" id="dateFrom" class="date-input" placeholder="From date" title="From date">
+                                <input type="date" id="dateTo" class="date-input" placeholder="To date" title="To date">
+                                <button id="clearFilters" class="btn btn-secondary clear-filters-btn" title="Clear all filters">
+                                    🔄 Clear
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Category Filters -->
+                        <div class="category-filters-container">
+                            <h3 class="category-filters-title">📂 Filter by Category</h3>
+                            <div class="category-filters" id="categoryFilters">
+                                <button class="category-filter-btn active" data-category="">
+                                    <span class="category-icon">📊</span>
+                                    <span class="category-name">All</span>
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <div class="filters">
+                            <button class="filter-btn active" data-filter="all">All</button>
+                            <button class="filter-btn" data-filter="active">Active</button>
+                            <button class="filter-btn" data-filter="closed">Closed</button>
+                            <button class="filter-btn" data-filter="my">My Polls</button>
+                        </div>
+                    </div>
+                    <div id="pollsList" class="polls-list">
+                        <p class="loading">Loading polls...</p>
+                    </div>
+                </section>
+
+                <!-- Poll Detail View -->
+                <section id="pollDetailSection" class="poll-detail-section" style="display: none;">
+                    <button class="btn btn-secondary back-btn" id="backBtn">← Back to Polls</button>
+                    <div id="pollDetail"></div>
+                </section>
+            </div>
+        </main>
+
+        <!-- Modals -->
+        <!-- Login Modal -->
+        <div id="loginModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🔐 Welcome Back</h2>
+                <p class="modal-subtitle">Sign in to create and vote on polls</p>
+                <form id="loginForm">
+                    <div class="form-group">
+                        <label for="loginUsername">📧 Username or Email</label>
+                        <input type="text" id="loginUsername" placeholder="Enter your username or email" required autocomplete="username">
+                    </div>
+                    <div class="form-group">
+                        <label for="loginPassword">🔒 Password</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('loginPassword', this)">
+                                👁️
+                            </button>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="rememberMe">
+                            <span>Remember me</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">🚀 Sign In</button>
+                    </div>
+                    <p class="form-message" id="loginMessage"></p>
+                    
+                    <!-- OAuth Divider -->
+                    <div class="oauth-divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <!-- Google Sign In -->
+                    <button type="button" class="btn btn-google btn-full-width" onclick="googleLogin()">
+                        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Continue with Google
+                    </button>
+                    
+                    <div class="modal-footer-links">
+                        <a href="#" onclick="closeModal('loginModal'); showModal('forgotPasswordModal'); return false;">🔑 Forgot Password?</a>
+                    </div>
+                    <p class="modal-footer-text">
+                        Don't have an account? <a href="#" onclick="closeModal('loginModal'); showModal('registerModal'); return false;">Sign up</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Register Modal -->
+        <div id="registerModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🚀 Create Account</h2>
+                <p class="modal-subtitle">Join QuickPoll to start creating polls</p>
+                <form id="registerForm">
+                    <div class="form-group">
+                        <label for="registerName">✨ Full Name *</label>
+                        <input type="text" id="registerName" minlength="2" maxlength="100" placeholder="Enter your full name" required autocomplete="name">
+                        <small class="form-helper-text">Your name will be displayed on your profile.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerUsername">👤 Username *</label>
+                        <div class="username-input-wrapper">
+                            <input type="text" id="registerUsername" minlength="3" maxlength="50" placeholder="Choose a unique username (3-50 characters)" required autocomplete="username">
+                            <span class="username-status" id="usernameStatus"></span>
+                        </div>
+                        <small class="form-helper-text" id="usernameHelper">Letters, numbers, underscore and dash only. This will be visible on your polls.</small>
+                        <div id="usernameSuggestions" class="username-suggestions" style="display: none;"></div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerEmail">📧 Email Address *</label>
+                        <input type="email" id="registerEmail" placeholder="your@email.com" required autocomplete="email">
+                        <small class="form-helper-text">We'll use this for account recovery and important notifications.</small>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerPassword">🔒 Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="registerPassword" minlength="8" placeholder="Create a strong password" required autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('registerPassword', this)">
+                                👁️
+                            </button>
+                        </div>
+                        <div id="passwordStrength" class="password-strength">
+                            <div class="strength-meter">
+                                <div class="strength-meter-fill" id="strengthMeterFill"></div>
+                            </div>
+                            <small id="strengthText">Password strength: <span id="strengthLabel">-</span></small>
+                        </div>
+                        <div class="password-requirements" id="passwordRequirements">
+                            <small style="display: block; margin-bottom: 8px; font-weight: 500; color: #666;">Password must include:</small>
+                            <div class="requirement-item" id="req-length">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">At least 8 characters</span>
+                            </div>
+                            <div class="requirement-item" id="req-uppercase">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">Uppercase letter (A-Z)</span>
+                            </div>
+                            <div class="requirement-item" id="req-lowercase">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">Lowercase letter (a-z)</span>
+                            </div>
+                            <div class="requirement-item" id="req-number">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">Number (0-9)</span>
+                            </div>
+                            <div class="requirement-item" id="req-special">
+                                <span class="requirement-icon">○</span>
+                                <span class="requirement-text">Special character (!@#$%^&*)</span>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="registerConfirmPassword">🔒 Confirm Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="registerConfirmPassword" minlength="8" placeholder="Re-enter your password" required autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('registerConfirmPassword', this)">
+                                👁️
+                            </button>
+                        </div>
+                        <small id="passwordMatch" class="form-helper-text"></small>
+                    </div>
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="agreeTerms" required>
+                            <span>I agree to the Terms of Service and Privacy Policy</span>
+                        </label>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">✨ Create Account</button>
+                    </div>
+                    <p class="form-message" id="registerMessage"></p>
+                    
+                    <!-- OAuth Divider -->
+                    <div class="oauth-divider">
+                        <span>OR</span>
+                    </div>
+                    
+                    <!-- Google Sign Up -->
+                    <button type="button" class="btn btn-google btn-full-width" onclick="googleLogin()">
+                        <svg width="18" height="18" viewBox="0 0 18 18" style="margin-right: 8px;">
+                            <path fill="#4285F4" d="M17.64 9.2c0-.637-.057-1.251-.164-1.84H9v3.481h4.844c-.209 1.125-.843 2.078-1.796 2.717v2.258h2.908c1.702-1.567 2.684-3.875 2.684-6.615z"/>
+                            <path fill="#34A853" d="M9 18c2.43 0 4.467-.806 5.956-2.18l-2.908-2.259c-.806.54-1.837.86-3.048.86-2.344 0-4.328-1.584-5.036-3.711H.957v2.332C2.438 15.983 5.482 18 9 18z"/>
+                            <path fill="#FBBC05" d="M3.964 10.71c-.18-.54-.282-1.117-.282-1.71s.102-1.17.282-1.71V4.958H.957C.347 6.173 0 7.548 0 9s.348 2.827.957 4.042l3.007-2.332z"/>
+                            <path fill="#EA4335" d="M9 3.58c1.321 0 2.508.454 3.44 1.345l2.582-2.58C13.463.891 11.426 0 9 0 5.482 0 2.438 2.017.957 4.958L3.964 7.29C4.672 5.163 6.656 3.58 9 3.58z"/>
+                        </svg>
+                        Sign up with Google
+                    </button>
+                    
+                    <p class="modal-footer-text">
+                        Already have an account? <a href="#" onclick="closeModal('registerModal'); showModal('loginModal'); return false;">Sign in</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Forgot Password Modal -->
+        <div id="forgotPasswordModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🔑 Reset Password</h2>
+                <p class="modal-subtitle">Enter your email address to reset your password</p>
+                <div class="info-box" style="background: #fff3cd; border-left: 4px solid #ffc107; padding: 12px; margin-bottom: 20px; border-radius: 4px;">
+                    <p style="margin: 0; font-size: 0.9em; color: #856404;">
+                        <strong>ℹ️ Note:</strong> Since email is not configured yet, you'll get a direct reset link instead of an email.
+                    </p>
+                </div>
+                <form id="forgotPasswordForm">
+                    <div class="form-group">
+                        <label for="forgotEmail">📧 Email Address</label>
+                        <input type="email" id="forgotEmail" placeholder="your@email.com" required autocomplete="email">
+                        <small class="form-helper-text">Enter the email you used to register</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">📨 Generate Reset Link</button>
+                    </div>
+                    <p class="form-message" id="forgotPasswordMessage"></p>
+                    <p class="modal-footer-text">
+                        Remember your password? <a href="#" onclick="closeModal('forgotPasswordModal'); showModal('loginModal'); return false;">Sign in</a>
+                    </p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Reset Password Modal -->
+        <div id="resetPasswordModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🔒 Create New Password</h2>
+                <p class="modal-subtitle">Enter your new password</p>
+                <form id="resetPasswordForm">
+                    <input type="hidden" id="resetToken">
+                    <div class="form-group">
+                        <label for="newPassword">🔒 New Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="newPassword" minlength="8" placeholder="Create a strong password" required autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('newPassword', this)">
+                                👁️
+                            </button>
+                        </div>
+                        <div id="resetPasswordStrength" class="password-strength">
+                            <div class="strength-meter">
+                                <div class="strength-meter-fill" id="resetStrengthMeterFill"></div>
+                            </div>
+                            <small id="resetStrengthText">Password strength: <span id="resetStrengthLabel">-</span></small>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label for="confirmNewPassword">🔒 Confirm New Password *</label>
+                        <div class="password-input-wrapper">
+                            <input type="password" id="confirmNewPassword" minlength="8" placeholder="Re-enter your password" required autocomplete="new-password">
+                            <button type="button" class="toggle-password" onclick="togglePasswordVisibility('confirmNewPassword', this)">
+                                👁️
+                            </button>
+                        </div>
+                        <small id="resetPasswordMatch" class="form-helper-text"></small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">✅ Reset Password</button>
+                    </div>
+                    <p class="form-message" id="resetPasswordMessage"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Create Poll Modal -->
+        <div id="createPollModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close">&times;</span>
+                <h2>📊 Create New Poll</h2>
+                <p class="modal-subtitle">Create an engaging poll and get instant feedback from your audience</p>
+                
+                <!-- Poll Templates -->
+                <div class="poll-templates">
+                    <label class="templates-label">🎨 Quick Templates</label>
+                    <div class="template-buttons">
+                        <button type="button" class="template-btn" data-template="blank">
+                            <span class="template-icon">📝</span>
+                            <span class="template-name">Blank</span>
+                        </button>
+                        <button type="button" class="template-btn" data-template="yes-no">
+                            <span class="template-icon">✓✗</span>
+                            <span class="template-name">Yes/No</span>
+                        </button>
+                        <button type="button" class="template-btn" data-template="true-false">
+                            <span class="template-icon">✓✗</span>
+                            <span class="template-name">True/False</span>
+                        </button>
+                        <button type="button" class="template-btn" data-template="agree-disagree">
+                            <span class="template-icon">👍👎</span>
+                            <span class="template-name">Agree Scale</span>
+                        </button>
+                        <button type="button" class="template-btn" data-template="rating">
+                            <span class="template-icon">⭐</span>
+                            <span class="template-name">Star Rating</span>
+                        </button>
+                        <button type="button" class="template-btn" data-template="thumbs">
+                            <span class="template-icon">👍</span>
+                            <span class="template-name">Thumbs</span>
+                        </button>
+                    </div>
+                </div>
+                
+                <form id="createPollForm">
+                    <div class="form-group">
+                        <label for="pollTitle">📝 Poll Title *</label>
+                        <input type="text" id="pollTitle" maxlength="200" placeholder="What would you like to ask?" required>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pollDescription">📄 Description (Optional)</label>
+                        <textarea id="pollDescription" maxlength="2000" rows="3" placeholder="Add more context to your poll..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pollCategory">📂 Category</label>
+                        <select id="pollCategory" class="category-select">
+                            <option value="">Select a category (optional)</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pollTagsInput">🏷️ Tags (Optional)</label>
+                        <div class="tags-input-container">
+                            <div class="tags-display" id="pollTagsDisplay"></div>
+                            <input type="text" id="pollTagsInput" class="tag-input-field" placeholder="Type a tag and press Enter or comma...">
+                        </div>
+                        <small class="form-helper-text">Press Enter, comma, or space to add a tag. Click × to remove.</small>
+                        <input type="hidden" id="pollTags">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📋 Poll Options *</label>
+                        <div class="ai-suggestion-container">
+                            <button type="button" class="btn btn-secondary btn-sm" id="aiSuggestBtn">
+                                ✨ Get AI Suggestions
+                            </button>
+                            <span class="ai-helper-text">Let AI generate poll options based on your title & description</span>
+                        </div>
+                        <div id="createPollOptions">
+                            <div class="option-input">
+                                <input type="text" class="poll-option" placeholder="Option 1" required>
+                            </div>
+                            <div class="option-input">
+                                <input type="text" class="poll-option" placeholder="Option 2" required>
+                            </div>
+                        </div>
+                        <button type="button" class="btn btn-secondary btn-sm" id="addOptionBtn">+ Add Option</button>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="pollDuration">⏰ Poll Duration</label>
+                        <select id="pollDuration">
+                            <option value="">No expiration</option>
+                            <option value="1">1 day</option>
+                            <option value="3">3 days</option>
+                            <option value="7">1 week</option>
+                            <option value="14">2 weeks</option>
+                            <option value="30">1 month</option>
+                            <option value="custom">Custom date...</option>
+                        </select>
+                    </div>
+                    
+                    <div class="form-group hidden" id="customDateGroup">
+                        <label for="pollExpiresAt">📅 Expiration Date & Time</label>
+                        <input type="datetime-local" id="pollExpiresAt">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="allowMultipleVotes">
+                            <span>🔄 Allow users to vote multiple times</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="allowAnonymousVotes">
+                            <span>🌐 Allow anyone to vote (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors vote without signing in</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="allowAnonymousComments">
+                            <span>💬 Allow anyone to comment (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors comment without signing in</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="allowAnonymousLikes">
+                            <span>❤️ Allow anyone to like/dislike (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors react to your poll without signing in</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">✨ Create Poll</button>
+                    </div>
+                    <p class="form-message" id="createPollMessage"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Edit Poll Modal -->
+        <div id="editPollModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close">&times;</span>
+                <h2>✏️ Edit Poll</h2>
+                <p class="modal-subtitle">Update your poll details and settings</p>
+                <form id="editPollForm">
+                    <div class="form-group">
+                        <label for="editPollTitle">📝 Poll Title *</label>
+                        <input type="text" id="editPollTitle" maxlength="200" placeholder="Poll title" required>
+                    </div>
+                    <div class="form-group">
+                        <label for="editPollDescription">📄 Description (Optional)</label>
+                        <textarea id="editPollDescription" maxlength="2000" rows="3" placeholder="Poll description..."></textarea>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editPollCategory">📂 Category</label>
+                        <select id="editPollCategory">
+                            <option value="">Select a category (optional)</option>
+                            <!-- Categories will be loaded dynamically -->
+                        </select>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="editPollTagsInput">🏷️ Tags (Optional)</label>
+                        <div class="tags-input-container">
+                            <div class="tags-display" id="editPollTagsDisplay"></div>
+                            <input type="text" id="editPollTagsInput" class="tag-input-field" placeholder="Type a tag and press Enter or comma...">
+                        </div>
+                        <small class="form-helper-text">Press Enter, comma, or space to add a tag. Click × to remove.</small>
+                        <input type="hidden" id="editPollTags">
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>📋 Poll Options *</label>
+                        <div id="editPollOptions">
+                            <!-- Options will be populated dynamically -->
+                        </div>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editAllowMultipleVotes">
+                            <span>🔄 Allow users to vote multiple times</span>
+                        </label>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editAllowAnonymousVotes">
+                            <span>🌐 Allow anyone to vote (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors vote without signing in</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editAllowAnonymousComments">
+                            <span>💬 Allow anyone to comment (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors comment without signing in</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="editAllowAnonymousLikes">
+                            <span>❤️ Allow anyone to like/dislike (no login required)</span>
+                        </label>
+                        <small class="form-helper-text">Enable this to let visitors react to your poll without signing in</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="editPollActive">
+                            ✅ Poll is active (users can vote)
+                        </label>
+                        <small class="form-helper-text">Uncheck to close the poll and stop accepting votes</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary">💾 Save Changes</button>
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('editPollModal')">Cancel</button>
+                    </div>
+                    <p class="form-message" id="editPollMessage"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Custom Confirmation Modal -->
+        <div id="confirmModal" class="modal">
+            <div class="modal-content modal-small">
+                <h2 id="confirmTitle">⚠️ Confirm Action</h2>
+                <p id="confirmMessage" class="modal-subtitle"></p>
+                <div class="form-actions">
+                    <button type="button" class="btn btn-danger" id="confirmYesBtn">Yes, Delete</button>
+                    <button type="button" class="btn btn-secondary" id="confirmNoBtn">Cancel</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Keys Modal -->
+        <div id="apiKeysModal" class="modal">
+            <div class="modal-content modal-large">
+                <span class="close">&times;</span>
+                <h2>🔑 API Keys</h2>
+                <p class="modal-subtitle">Manage your API keys for programmatic access</p>
+                
+                <!-- Instructions Section -->
+                <div class="api-keys-instructions">
+                    <h3>📖 How to Use API Keys</h3>
+                    <ol>
+                        <li><strong>Create a Key:</strong> Click "Create New API Key" and give it a descriptive name</li>
+                        <li><strong>Save It:</strong> <span class="warning-text">⚠️ Copy and save your key immediately - it's only shown once!</span></li>
+                        <li><strong>Use It:</strong> Include the key in your API requests using the <code>X-API-Key</code> header</li>
+                        <li><strong>Test It:</strong> Use the "Test API Key" feature below to verify it works</li>
+                        <li><strong>Revoke:</strong> Delete keys you no longer need to keep your account secure</li>
+                    </ol>
+                    <div class="api-keys-example">
+                        <strong>💡 Example Usage:</strong>
+                        <pre><code>curl -X POST http://localhost:8000/api/polls/ \
+  -H "X-API-Key: qp_live_your_key_here" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "My Poll", "options": ["Yes", "No"]}'</code></pre>
+                    </div>
+                    <div class="api-keys-tips">
+                        <h4>💡 Quick Tips:</h4>
+                        <ul>
+                            <li>🔒 <strong>Security:</strong> Never share your API keys publicly or commit them to version control</li>
+                            <li>⏰ <strong>Expiration:</strong> Set expiration dates for temporary keys</li>
+                            <li>🏷️ <strong>Naming:</strong> Use descriptive names to identify where each key is used</li>
+                            <li>🔄 <strong>Rotation:</strong> Regularly rotate keys for better security</li>
+                            <li>🧪 <strong>Testing:</strong> Always test new keys before using them in production</li>
+                        </ul>
+                    </div>
+                </div>
+                
+                <div class="api-keys-header">
+                    <button class="btn btn-primary" id="createApiKeyBtn">✨ Create New API Key</button>
+                    <button class="btn btn-secondary" id="testApiKeyBtn">🧪 Test API Key</button>
+                </div>
+                
+                <div id="apiKeysList" class="api-keys-list">
+                    <p class="loading">Loading API keys...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Create API Key Modal -->
+        <div id="createApiKeyModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>✨ Create New API Key</h2>
+                <p class="modal-subtitle">Generate a new API key for programmatic access</p>
+                
+                <form id="createApiKeyForm">
+                    <div class="form-group">
+                        <label for="apiKeyName">🏷️ Key Name *</label>
+                        <input type="text" id="apiKeyName" maxlength="100" placeholder="e.g., My App API Key" required>
+                        <small class="form-helper-text">Choose a descriptive name to identify this key</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="apiKeyExpiration">⏰ Expiration</label>
+                        <select id="apiKeyExpiration">
+                            <option value="">Never</option>
+                            <option value="30">30 days</option>
+                            <option value="90">90 days</option>
+                            <option value="180">180 days</option>
+                            <option value="365">1 year</option>
+                        </select>
+                        <small class="form-helper-text">Optional: Set when this key should expire</small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">🔑 Generate API Key</button>
+                    </div>
+                    <p class="form-message" id="createApiKeyMessage"></p>
+                </form>
+            </div>
+        </div>
+
+        <!-- Show API Key Modal (One-time display) -->
+        <div id="showApiKeyModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>✅ API Key Created!</h2>
+                <p class="modal-subtitle">⚠️ Important: Save this key now - it won't be shown again!</p>
+                
+                <div class="api-key-display">
+                    <label>🔑 Your API Key</label>
+                    <div class="api-key-value-container">
+                        <code id="apiKeyValue" class="api-key-value"></code>
+                        <button class="btn btn-secondary btn-copy" id="copyApiKeyBtn" title="Copy to clipboard">
+                            📋 Copy
+                        </button>
+                    </div>
+                    <small class="form-helper-text warning">
+                        ⚠️ This is the only time you'll see this key. Store it securely!
+                    </small>
+                </div>
+                
+                <div class="api-key-info">
+                    <p><strong>Key Name:</strong> <span id="newApiKeyName"></span></p>
+                    <p><strong>Key Prefix:</strong> <code id="newApiKeyPrefix"></code></p>
+                    <p><strong>Created:</strong> <span id="newApiKeyCreated"></span></p>
+                    <p><strong>Expires:</strong> <span id="newApiKeyExpires"></span></p>
+                </div>
+                
+                <div class="form-actions">
+                    <button type="button" class="btn btn-primary btn-full-width" onclick="closeModal('showApiKeyModal')">
+                        ✅ I've Saved My Key
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Test API Key Modal -->
+        <div id="testApiKeyModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🧪 Test API Key</h2>
+                <p class="modal-subtitle">Verify your API key is working correctly</p>
+                
+                <form id="testApiKeyForm">
+                    <div class="form-group">
+                        <label for="testApiKeyValue">🔑 API Key to Test</label>
+                        <input type="text" id="testApiKeyValue" placeholder="qp_live_..." required>
+                        <small class="form-helper-text">Paste your API key here to test it</small>
+                    </div>
+                    
+                    <div class="form-group">
+                        <label for="testEndpoint">🎯 Test Endpoint</label>
+                        <select id="testEndpoint">
+                            <optgroup label="✅ API Key Supported - All Endpoints">
+                                <option value="verify">🔐 Verify Key (GET /api/api-keys/verify)</option>
+                                <option value="polls">📊 List Polls (GET /api/polls/)</option>
+                                <option value="stats">📈 Get Stats (GET /api/stats/polls)</option>
+                                <option value="api-keys">🔑 List My API Keys (GET /api/api-keys/)</option>
+                                <option value="user">👤 Get User Info (GET /api/users/me)</option>
+                                <option value="notifications">🔔 Get Notifications (GET /api/notifications/)</option>
+                            </optgroup>
+                        </select>
+                        <small class="form-helper-text">
+                            ✅ All endpoints now support API key authentication!
+                        </small>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-primary btn-full-width">🚀 Test API Key</button>
+                    </div>
+                    <p class="form-message" id="testApiKeyMessage"></p>
+                </form>
+                
+                <div id="testApiKeyResult" class="api-test-result" style="display: none;">
+                    <h3>📊 Test Result</h3>
+                    <div id="testApiKeyResultContent"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Share Poll Modal -->
+        <div id="sharePollModal" class="modal">
+            <div class="modal-content">
+                <span class="close">&times;</span>
+                <h2>🔗 Share Poll</h2>
+                <p class="modal-subtitle">Share this poll with others</p>
+                
+                <div class="share-section">
+                    <h3>📋 Copy Link</h3>
+                    <div class="share-url-container">
+                        <input type="text" id="sharePollUrl" readonly class="share-url-input" placeholder="Poll URL will appear here...">
+                        <button class="btn btn-primary" id="copyShareUrlBtn">📋 Copy</button>
+                    </div>
+                    <p class="share-success" id="copyUrlSuccess" style="display: none;">✅ Link copied to clipboard!</p>
+                </div>
+                
+                <div class="share-section">
+                    <h3>📱 Share on Social Media</h3>
+                    <div class="share-buttons">
+                        <button class="btn btn-social btn-twitter" id="shareTwitterBtn">
+                            <span class="social-icon">🐦</span> Twitter
+                        </button>
+                        <button class="btn btn-social btn-facebook" id="shareFacebookBtn">
+                            <span class="social-icon">📘</span> Facebook
+                        </button>
+                        <button class="btn btn-social btn-whatsapp" id="shareWhatsAppBtn">
+                            <span class="social-icon">💬</span> WhatsApp
+                        </button>
+                        <button class="btn btn-social btn-email" id="shareEmailBtn">
+                            <span class="social-icon">📧</span> Email
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="share-section">
+                    <h3>📱 QR Code</h3>
+                    <p class="share-description">Scan this QR code to open the poll</p>
+                    <div class="qr-code-container">
+                        <canvas id="qrCodeCanvas" width="200" height="200"></canvas>
+                    </div>
+                    <button class="btn btn-secondary" id="downloadQrBtn">⬇️ Download QR Code</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Badges Modal -->
+        <div id="badgesModal" class="modal">
+            <div class="modal-content modal-wide">
+                <span class="close">&times;</span>
+                <h2>🏆 My Badges & Achievements</h2>
+                <p class="modal-subtitle">Track your progress and earn rewards</p>
+                
+                <!-- Progress Overview -->
+                <div class="badge-progress-section">
+                    <h3>📊 Your Progress</h3>
+                    <div class="progress-stats-grid">
+                        <div class="progress-stat">
+                            <div class="progress-icon">📊</div>
+                            <div class="progress-value" id="progressPollsCreated">0</div>
+                            <div class="progress-label">Polls Created</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-icon">🗳️</div>
+                            <div class="progress-value" id="progressVotesCast">0</div>
+                            <div class="progress-label">Votes Cast</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-icon">💬</div>
+                            <div class="progress-value" id="progressComments">0</div>
+                            <div class="progress-label">Comments Written</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-icon">❤️</div>
+                            <div class="progress-value" id="progressLikes">0</div>
+                            <div class="progress-label">Likes Given</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-icon">🏆</div>
+                            <div class="progress-value" id="progressBadgesEarned">0</div>
+                            <div class="progress-label">Badges Earned</div>
+                        </div>
+                        <div class="progress-stat">
+                            <div class="progress-icon">⭐</div>
+                            <div class="progress-value" id="progressTotalPoints">0</div>
+                            <div class="progress-label">Total Points</div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Badge Categories -->
+                <div class="badge-categories">
+                    <button class="badge-category-btn active" data-category="all">All Badges</button>
+                    <button class="badge-category-btn" data-category="creation">🎯 Creation</button>
+                    <button class="badge-category-btn" data-category="voting">🗳️ Voting</button>
+                    <button class="badge-category-btn" data-category="popularity">🔥 Popularity</button>
+                    <button class="badge-category-btn" data-category="social">💬 Social</button>
+                    <button class="badge-category-btn" data-category="special">🌟 Special</button>
+                </div>
+
+                <!-- Badges Grid -->
+                <div id="badgesGrid" class="badges-grid">
+                    <p class="loading">Loading badges...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- User Profile Modal -->
+        <div id="profileModal" class="modal">
+            <div class="modal-content modal-wide">
+                <span class="close">&times;</span>
+                <h2>👤 My Profile</h2>
+                <p class="modal-subtitle">Customize your public profile</p>
+                
+                <form id="profileForm" onsubmit="updateProfile(event)">
+                    <!-- Profile Images Section -->
+                    <div class="profile-images-section">
+                        <div class="profile-image-group">
+                            <label for="avatarUrl">
+                                <span class="label-icon">🖼️</span> Avatar / Profile Picture
+                            </label>
+                            <div class="image-upload-container">
+                                <div class="upload-methods">
+                                    <div class="upload-tab-buttons">
+                                        <button type="button" class="upload-tab active" data-tab="avatar-upload">Upload File</button>
+                                        <button type="button" class="upload-tab" data-tab="avatar-url">Use URL</button>
+                                    </div>
+                                    
+                                    <div id="avatar-upload" class="upload-tab-content active">
+                                        <div class="file-upload-area" id="avatarUploadArea">
+                                            <input type="file" id="avatarFile" accept="image/*" style="display: none;">
+                                            <div class="upload-placeholder" onclick="document.getElementById('avatarFile').click()">
+                                                <div class="upload-icon">📤</div>
+                                                <p>Click to upload or drag & drop</p>
+                                                <small>JPG, PNG, GIF, WebP (Max 5MB)</small>
+                                            </div>
+                                            <div id="avatarPreview" class="image-preview" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="avatar-url" class="upload-tab-content">
+                                        <input type="url" id="avatarUrl" placeholder="https://example.com/avatar.jpg" maxlength="500">
+                                        <small class="form-hint">Paste a direct link to your profile picture</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-image-group">
+                            <label for="coverImageUrl">
+                                <span class="label-icon">🎨</span> Cover Image
+                            </label>
+                            <div class="image-upload-container">
+                                <div class="upload-methods">
+                                    <div class="upload-tab-buttons">
+                                        <button type="button" class="upload-tab active" data-tab="cover-upload">Upload File</button>
+                                        <button type="button" class="upload-tab" data-tab="cover-url">Use URL</button>
+                                    </div>
+                                    
+                                    <div id="cover-upload" class="upload-tab-content active">
+                                        <div class="file-upload-area" id="coverUploadArea">
+                                            <input type="file" id="coverFile" accept="image/*" style="display: none;">
+                                            <div class="upload-placeholder" onclick="document.getElementById('coverFile').click()">
+                                                <div class="upload-icon">📤</div>
+                                                <p>Click to upload or drag & drop</p>
+                                                <small>JPG, PNG, GIF, WebP (Max 5MB)</small>
+                                            </div>
+                                            <div id="coverPreview" class="image-preview" style="display: none;"></div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div id="cover-url" class="upload-tab-content">
+                                        <input type="url" id="coverImageUrl" placeholder="https://example.com/cover.jpg" maxlength="500">
+                                        <small class="form-hint">Paste a direct link to your cover photo</small>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Bio Section -->
+                    <div class="form-group">
+                        <label for="bio">
+                            <span class="label-icon">📝</span> Bio
+                        </label>
+                        <textarea id="bio" rows="4" placeholder="Tell us about yourself..." maxlength="500"></textarea>
+                        <small class="form-hint"><span id="bioCount">0</span>/500 characters</small>
+                    </div>
+
+                    <!-- Location & Social -->
+                    <div class="profile-grid">
+                        <div class="form-group">
+                            <label for="location">
+                                <span class="label-icon">📍</span> Location
+                            </label>
+                            <input type="text" id="location" placeholder="City, Country" maxlength="100">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="website">
+                                <span class="label-icon">🌐</span> Website
+                            </label>
+                            <input type="url" id="website" placeholder="https://your-website.com" maxlength="200">
+                        </div>
+
+                        <div class="form-group">
+                            <label for="twitterHandle">
+                                <span class="label-icon">🐦</span> Twitter Handle
+                            </label>
+                            <input type="text" id="twitterHandle" placeholder="@username" maxlength="50">
+                        </div>
+                    </div>
+
+                    <!-- Privacy Toggle -->
+                    <div class="form-group">
+                        <label class="checkbox-label">
+                            <input type="checkbox" id="isPublicProfile" checked>
+                            <span>🔓 Make my profile public</span>
+                        </label>
+                        <small class="form-hint">Public profiles can be viewed by anyone</small>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="profile-actions">
+                        <button type="button" class="btn btn-secondary" onclick="closeModal('profileModal')">Cancel</button>
+                        <button type="submit" class="btn btn-primary">
+                            <span class="btn-icon">💾</span> Save Profile
+                        </button>
+                    </div>
+                </form>
+
+                <!-- Profile Preview (optional) -->
+                <div id="profilePreview" class="profile-preview" style="display: none;">
+                    <h3>👁️ Preview</h3>
+                    <div class="profile-card">
+                        <div class="profile-card-cover" id="previewCover"></div>
+                        <div class="profile-card-avatar" id="previewAvatar"></div>
+                        <div class="profile-card-info">
+                            <h4 id="previewUsername">Username</h4>
+                            <p id="previewBio"></p>
+                            <div class="profile-card-meta">
+                                <span id="previewLocation"></span>
+                                <span id="previewWebsite"></span>
+                                <span id="previewTwitter"></span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification Container -->
+    <div id="toastContainer" class="toast-container"></div>
+
+    <!-- Welcome Tour Overlay -->
+    <div id="tourOverlay" class="tour-overlay" style="display: none;"></div>
+    <div id="tourTooltip" class="tour-tooltip" style="display: none;">
+        <div class="tour-header">
+            <h3 class="tour-title"></h3>
+            <button class="tour-close" id="tourClose">×</button>
+        </div>
+        <p class="tour-description"></p>
+        <div class="tour-footer">
+            <div class="tour-progress">
+                <span class="tour-step-count"></span>
+            </div>
+            <div class="tour-actions">
+                <button class="btn btn-secondary btn-sm" id="tourSkip">Skip Tour</button>
+                <button class="btn btn-secondary btn-sm" id="tourPrev" style="display: none;">← Previous</button>
+                <button class="btn btn-primary btn-sm" id="tourNext">Next →</button>
+            </div>
+        </div>
+        <div class="tour-dont-show">
+            <label class="checkbox-label">
+                <input type="checkbox" id="tourDontShow">
+                <span>Don't show this tour again</span>
+            </label>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/qrcode@1.5.3/build/qrcode.min.js"></script>
+    <script src="app.js?v=64"></script>
+</body>
+</html>
