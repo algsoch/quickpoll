@@ -9,7 +9,7 @@ services:
     plan: free
     dockerfilePath: ./Dockerfile.backend
     dockerContext: .
-    dockerCommand: gunicorn backend.main:app --workers 2 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT --access-logfile - --error-logfile - --log-level info
+    dockerCommand: --target production
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
@@ -25,7 +25,7 @@ services:
       - key: ENVIRONMENT
         value: production
       - key: ALLOWED_ORIGINS
-        value: https://quickpoll-frontend.onrender.com
+        value: https://quickpoll-frontend.onrender.com,https://quickpoll-frontend-c4p7.onrender.com
       - key: ADMIN_USERNAME
         value: admin
       - key: ADMIN_PASSWORD
