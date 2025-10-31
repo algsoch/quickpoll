@@ -6,14 +6,15 @@ services:
     name: quickpoll-api
     env: docker
     region: oregon
-    plan: starter
+    plan: free
     dockerfilePath: ./Dockerfile
     dockerContext: .
-    dockerCommand: gunicorn backend.main:app --workers 4 --worker-class uvicorn.workers.UvicornWorker --bind 0.0.0.0:$PORT
     healthCheckPath: /health
     envVars:
       - key: DATABASE_URL
-        sync: false
+        value: postgresql+asyncpg://vickypoll:Iit7065@vickykumar.postgres.database.azure.com:5432/postgres?ssl=require
+      - key: GEMINI_API_KEY
+        value: AIzaSyDLvgK7RnT6do4sdgJ8-fqcBPxpBxJSqyc
       - key: SECRET_KEY
         generateValue: true
       - key: ALGORITHM
@@ -38,7 +39,7 @@ services:
   # Frontend (Static Site)
   - type: web
     name: quickpoll-frontend
-    env: static
+    runtime: static
     buildCommand: echo "Static site - no build needed"
     staticPublishPath: ./frontend
     routes:
