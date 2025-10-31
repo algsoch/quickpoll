@@ -2,7 +2,7 @@
 // Configuration
 const API_BASE_URL = window.location.hostname === 'localhost' 
     ? 'http://localhost:8080' 
-    : 'https://app.algsoch.tech';  // Use your production API URL
+    : 'https://quickpoll-backend-app.azurewebsites.net';  // Azure production API URL
 const WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
 
 // Reaction constants

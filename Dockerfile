@@ -59,7 +59,6 @@ RUN useradd -m -u 1000 appuser && \
 COPY --chown=appuser:appuser backend/ ./backend/
 COPY --chown=appuser:appuser alembic/ ./alembic/
 COPY --chown=appuser:appuser alembic.ini .
-COPY --chown=appuser:appuser frontend/ ./frontend/
 
 # Switch to non-root user
 USER appuser

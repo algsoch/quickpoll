@@ -1,0 +1,37 @@
+[
+  {
+    "name": "DATABASE_URL",
+    "value": "postgresql+asyncpg://vickypoll:Iit7065@vickykumar.postgres.database.azure.com:5432/postgres?ssl=require",
+    "slotSetting": false
+  },
+  {
+    "name": "SECRET_KEY",
+    "value": "your-super-secret-key-change-in-production-minimum-32-characters-long",
+    "slotSetting": false
+  },
+  {
+    "name": "GEMINI_API_KEY",
+    "value": "AIzaSyDLvgK7RnT6do4sdgJ8-fqcBPxpBxJSqyc",
+    "slotSetting": false
+  },
+  {
+    "name": "ENVIRONMENT",
+    "value": "production",
+    "slotSetting": false
+  },
+  {
+    "name": "PORT",
+    "value": "8080",
+    "slotSetting": false
+  },
+  {
+    "name": "WEBSITES_PORT",
+    "value": "8080",
+    "slotSetting": false
+  },
+  {
+    "name": "ALLOWED_ORIGINS",
+    "value": "https://nice-dune-0b90a5400.3.azurestaticapps.net,https://quickpoll-backend-app.azurewebsites.net",
+    "slotSetting": false
+  }
+]
