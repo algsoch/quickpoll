@@ -134,13 +134,15 @@ app.include_router(api_keys.router)
 app.include_router(reactions.router)
 app.include_router(badges.router)
 
-# Import and include activity router
-from .routers import activity
-app.include_router(activity.router)
-
-# Import and include categories router
-from .routers import categories
-app.include_router(categories.router)
+# Import and include activity and categories routers
+try:
+    from backend.routers import activity, categories
+    app.include_router(activity.router)
+    app.include_router(categories.router)
+except Exception as e:
+    print(f"Error loading activity/categories routers: {e}")
+    import traceback
+    traceback.print_exc()
 
 
 # Health check endpoint

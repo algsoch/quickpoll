@@ -1,12 +1,12 @@
 """Activity Feed Router - Live activity feed of recent actions"""
 
 from fastapi import APIRouter, Depends, HTTPException, Query
-from sqlalchemy.orm import Session
-from sqlalchemy import desc, func, or_
+from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy import desc, func, or_, select
 from typing import List, Optional
 from datetime import datetime, timedelta
-from ..database import get_db
-from ..models import Poll, Vote, Comment, User
+from backend.database import get_db
+from backend.models import Poll, Vote, Comment, User
 from pydantic import BaseModel
 
 router = APIRouter(prefix="/api/activity", tags=["activity"])
@@ -36,7 +36,7 @@ async def get_activity_feed(
     activity_filter: str = Query("all", description="Filter: all, polls, votes, comments, trending"),
     limit: int = Query(20, ge=1, le=100),
     offset: int = Query(0, ge=0),
-    db: Session = Depends(get_db)
+    db: AsyncSession = Depends(get_db)
 ):
     """
     Get paginated activity feed with recent activities.
@@ -54,9 +54,12 @@ async def get_activity_feed(
     
     # Get recent polls (created in last 24 hours)
     if activity_filter in ["all", "polls"]:
-        recent_polls = db.query(Poll).filter(
-            Poll.created_at >= now - timedelta(hours=24)
-        ).order_by(desc(Poll.created_at)).limit(limit if activity_filter == "polls" else 10).all()
+        result = await db.execute(
+            select(Poll).where(Poll.created_at >= now - timedelta(hours=24))
+            .order_by(desc(Poll.created_at))
+            .limit(limit if activity_filter == "polls" else 10)
+        )
+        recent_polls = result.scalars().all()
         
         for poll in recent_polls:
             activities.append({
@@ -79,9 +82,12 @@ async def get_activity_feed(
     
     # Get recent votes (last 1 hour)
     if activity_filter in ["all", "votes"]:
-        recent_votes = db.query(Vote).filter(
-            Vote.created_at >= now - timedelta(hours=1)
-        ).order_by(desc(Vote.created_at)).limit(limit if activity_filter == "votes" else 15).all()
+        result = await db.execute(
+            select(Vote).where(Vote.created_at >= now - timedelta(hours=1))
+            .order_by(desc(Vote.created_at))
+            .limit(limit if activity_filter == "votes" else 15)
+        )
+        recent_votes = result.scalars().all()
         
         for vote in recent_votes:
             activities.append({
@@ -103,9 +109,12 @@ async def get_activity_feed(
     
     # Get recent comments (last 2 hours)
     if activity_filter in ["all", "comments"]:
-        recent_comments = db.query(Comment).filter(
-            Comment.created_at >= now - timedelta(hours=2)
-        ).order_by(desc(Comment.created_at)).limit(limit if activity_filter == "comments" else 10).all()
+        result = await db.execute(
+            select(Comment).where(Comment.created_at >= now - timedelta(hours=2))
+            .order_by(desc(Comment.created_at))
+            .limit(limit if activity_filter == "comments" else 10)
+        )
+        recent_comments = result.scalars().all()
         
         for comment in recent_comments:
             activities.append({
@@ -128,13 +137,15 @@ async def get_activity_feed(
     
     # Get trending polls (most votes in last hour)
     if activity_filter in ["all", "trending"]:
-        trending_polls = db.query(
-            Poll,
-            func.count(Vote.id).label('vote_count')
-        ).join(Vote).filter(
-            Vote.created_at >= now - timedelta(hours=1),
-            Poll.is_active == True
-        ).group_by(Poll.id).order_by(desc('vote_count')).limit(5).all()
+        result = await db.execute(
+            select(Poll, func.count(Vote.id).label('vote_count'))
+            .join(Vote)
+            .where(Vote.created_at >= now - timedelta(hours=1), Poll.is_active == True)
+            .group_by(Poll.id)
+            .order_by(desc('vote_count'))
+            .limit(5)
+        )
+        trending_polls = result.all()
         
         for poll, vote_count in trending_polls:
             if vote_count >= 3:  # Only show if at least 3 votes

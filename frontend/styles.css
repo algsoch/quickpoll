@@ -169,6 +169,179 @@ body {
     color: var(--text-secondary);
 }
 
+/* Mobile Menu Toggle */
+.mobile-menu-toggle {
+    display: none;
+    background: none;
+    border: none;
+    font-size: 1.5rem;
+    cursor: pointer;
+    padding: 0.5rem;
+    color: var(--text-primary);
+}
+
+/* Responsive Header Styles */
+@media (max-width: 768px) {
+    .header-content {
+        padding: 0.75rem 0;
+    }
+
+    .logo {
+        font-size: 1.25rem;
+    }
+
+    .logo-icon {
+        font-size: 1.5rem;
+    }
+
+    .nav {
+        gap: 0.5rem;
+    }
+
+    .nav-icons {
+        gap: 0.5rem;
+        flex-wrap: wrap;
+    }
+
+    .btn {
+        padding: 0.4rem 0.75rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-icon {
+        padding: 0.4rem;
+        font-size: 1rem;
+    }
+
+    #username {
+        display: none;
+    }
+
+    /* Hide API Keys button on mobile */
+    #apiKeysBtn {
+        display: none;
+    }
+}
+
+@media (max-width: 640px) {
+    .header-content {
+        flex-wrap: wrap;
+    }
+
+    .logo {
+        font-size: 1.1rem;
+    }
+
+    .logo-text {
+        display: none;
+    }
+
+    .logo-icon {
+        font-size: 1.8rem;
+    }
+
+    .nav {
+        width: 100%;
+        justify-content: flex-end;
+        gap: 0.4rem;
+    }
+
+    .guest-menu {
+        gap: 0.5rem;
+    }
+
+    .user-menu {
+        width: 100%;
+        justify-content: flex-end;
+    }
+
+    .nav-icons {
+        gap: 0.4rem;
+        justify-content: flex-end;
+    }
+
+    .btn {
+        padding: 0.35rem 0.6rem;
+        font-size: 0.75rem;
+        white-space: nowrap;
+    }
+
+    .btn-icon {
+        padding: 0.35rem;
+        font-size: 0.9rem;
+    }
+
+    /* Stack buttons vertically on very small screens */
+    .theme-toggle {
+        order: -1;
+    }
+}
+
+@media (max-width: 480px) {
+    .header-content {
+        padding: 0.5rem 0;
+    }
+
+    .container {
+        padding: 0 0.75rem;
+    }
+
+    .nav-icons {
+        flex-wrap: wrap;
+        max-width: 100%;
+    }
+
+    /* Hide help button on very small screens */
+    #helpBtn {
+        display: none;
+    }
+
+    /* Compact notification and badge buttons */
+    .notification-badge,
+    .badge-count {
+        font-size: 0.65rem;
+        padding: 0.1rem 0.3rem;
+    }
+
+    .btn-primary,
+    .btn-secondary {
+        padding: 0.3rem 0.5rem;
+        font-size: 0.7rem;
+    }
+}
+
+@media (max-width: 380px) {
+    .logo-container {
+        flex-shrink: 0;
+    }
+
+    /* Further reduce button sizes */
+    .btn {
+        padding: 0.25rem 0.4rem;
+        font-size: 0.65rem;
+    }
+
+    .btn-icon {
+        padding: 0.25rem;
+        font-size: 0.85rem;
+    }
+
+    /* Hide badges button on extra small screens */
+    #badgesBtn {
+        display: none;
+    }
+
+    /* Show only essential buttons */
+    #profileBtn {
+        padding: 0.3rem;
+    }
+
+    #createPollBtn {
+        flex-grow: 1;
+        text-align: center;
+    }
+}
+
 /* Buttons */
 .btn {
     padding: 0.5rem 1rem;

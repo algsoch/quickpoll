@@ -1,8 +1,8 @@
-// QuickPoll Frontend Application - v64 (Interactive Tag Input with Visual Chips)
+// QuickPoll Frontend Application - v65 (Interactive Tag Input with Visual Chips + Cloudflare Cache Fix)
 // Configuration
-const API_BASE_URL = window.location.hostname === 'localhost' 
-    ? 'http://localhost:8080' 
-    : 'https://quickpoll-backend-app.azurewebsites.net';  // Azure production API URL
+const API_BASE_URL = window.location.hostname === 'localhost' || window.location.hostname.startsWith('192.168.') || window.location.hostname.startsWith('10.')
+    ? `http://${window.location.hostname}:8080`
+    : 'https://api.algsoch.tech';  // Backend API on subdomain
 const WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
 
 // Reaction constants
