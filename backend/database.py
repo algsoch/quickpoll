@@ -11,13 +11,23 @@ from backend.config import settings
 
 
 # Create async engine
+# Configure engine options based on environment
+engine_options = {
+    "echo": not settings.is_production,
+    "pool_pre_ping": True,
+}
+
+# Only add pool settings for PostgreSQL (not for SQLite in tests)
+if settings.environment == "test" or "sqlite" in settings.database_url.lower():
+    engine_options["poolclass"] = NullPool
+else:
+    # PostgreSQL connection pool settings
+    engine_options["pool_size"] = 5
+    engine_options["max_overflow"] = 10
+
 engine = create_async_engine(
     settings.database_url,
-    echo=not settings.is_production,
-    poolclass=NullPool if settings.environment == "test" else None,
-    pool_pre_ping=True,
-    pool_size=5,
-    max_overflow=10,
+    **engine_options
 )
 
 # Create async session factory
