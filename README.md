@@ -1,12 +1,21 @@
 # QuickPoll - Production-Grade Real-Time Polling Application
 
-[![CI/CD](https://github.com/yourusername/quickpoll/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/yourusername/quickpoll/actions)
-[![codecov](https://codecov.io/gh/yourusername/quickpoll/branch/main/graph/badge.svg)](https://codecov.io/gh/yourusername/quickpoll)
+[![CI/CD](https://github.com/algsoch/quickpoll/workflows/CI/CD%20Pipeline/badge.svg)](https://github.com/algsoch/quickpoll/actions)
+[![codecov](https://codecov.io/gh/algsoch/quickpoll/branch/main/graph/badge.svg)](https://codecov.io/gh/algsoch/quickpoll)
 [![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
 [![FastAPI](https://img.shields.io/badge/FastAPI-0.109-009688.svg)](https://fastapi.tiangolo.com)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 A modern, production-ready polling application built for the **Lyzr AI Full-Stack Developer Challenge**. Features real-time WebSocket updates, JWT authentication, Azure PostgreSQL integration, and comprehensive CI/CD pipeline.
+
+## 🌐 Live Demo
+
+- **Frontend**: [https://quickpoll-frontend-xgc3.onrender.com/](https://quickpoll-frontend-xgc3.onrender.com/)
+- **Backend API**: [https://quickpoll-api-xgc3.onrender.com](https://quickpoll-api-xgc3.onrender.com)
+- **API Docs**: [https://quickpoll-api-xgc3.onrender.com/docs](https://quickpoll-api-xgc3.onrender.com/docs)
+- **Alternative Domain**: [https://app.algsoch.tech](https://app.algsoch.tech) (via Cloudflare Tunnel)
+
+> **Note**: Free tier services may take 30-50 seconds to wake up from sleep on first request.
 
 ## 🎯 Key Features
 
@@ -106,9 +115,9 @@ docker-compose down
 ```
 
 Access the application:
-- Frontend: http://localhost:3000
-- Backend API: http://localhost:8000
-- API Docs: http://localhost:8000/docs
+- Frontend: http://localhost:8000
+- Backend API: http://localhost:8080
+- API Docs: http://localhost:8080/docs
 
 4. **Option B: Run locally without Docker**
 
@@ -128,7 +137,7 @@ uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
 
 # Serve frontend (in another terminal)
 # Use any static file server, e.g.:
-python -m http.server 3000 --directory frontend
+python -m http.server 8000 --directory frontend
 ```
 
 ## 📝 API Documentation
@@ -224,7 +233,8 @@ GET /api/polls/{poll_id}/results
 
 #### WebSocket - Live Poll Results
 ```javascript
-const ws = new WebSocket('ws://localhost:8000/ws/polls/{poll_id}/results');
+const ws = new WebSocket('wss://quickpoll-api-xgc3.onrender.com/ws/polls/{poll_id}/results');
+// For local development: ws://localhost:8080/ws/polls/{poll_id}/results
 ws.onmessage = (event) => {
   const results = JSON.parse(event.data);
   console.log(results);
@@ -389,19 +399,58 @@ az webapp config appsettings set \
 
 See `staticwebapp.config.json` for configuration.
 
-### Render
+### Render (Currently Deployed ✅)
+
+**Live URLs:**
+- Frontend: https://quickpoll-frontend-xgc3.onrender.com/
+- Backend API: https://quickpoll-api-xgc3.onrender.com
+- API Docs: https://quickpoll-api-xgc3.onrender.com/docs
+
+#### Quick Deployment Steps
 
 1. **Backend Deployment**
-
-- Connect your GitHub repository to Render
-- Use the `render.yaml` configuration (Blueprint)
-- Set environment variables in Render dashboard
+   - Go to [Render Dashboard](https://dashboard.render.com)
+   - New + → Web Service
+   - Connect GitHub repository: `algsoch/quickpoll`
+   - Configure:
+     - Name: `quickpoll-api-xgc3`
+     - Runtime: Docker
+     - Dockerfile Path: `./Dockerfile.backend`
+     - Branch: `main`
+   - Add Environment Variables:
+     ```
+     DATABASE_URL=postgresql+asyncpg://user:pass@host:5432/db?ssl=require
+     SECRET_KEY=your-secret-key-32-chars-minimum
+     GEMINI_API_KEY=your-gemini-api-key
+     ADMIN_USERNAME=admin
+     ADMIN_PASSWORD=your-admin-password
+     ENVIRONMENT=production
+     ALLOWED_ORIGINS=https://quickpoll-frontend-xgc3.onrender.com,http://localhost:8000,https://app.algsoch.tech
+     ```
+   - Click **Create Web Service**
 
 2. **Frontend Deployment**
+   - New + → Web Service
+   - Same repository: `algsoch/quickpoll`
+   - Configure:
+     - Name: `quickpoll-frontend-xgc3`
+     - Runtime: Docker
+     - Dockerfile Path: `./Dockerfile.frontend`
+     - Branch: `main`
+   - Click **Create Web Service**
 
-- Create a new Static Site on Render
-- Point to the `frontend` directory
-- Deploy automatically on push
+3. **Verify Deployment**
+   - Backend health check: https://quickpoll-api-xgc3.onrender.com/health
+   - Frontend: https://quickpoll-frontend-xgc3.onrender.com/
+   - Test signup, login, create poll, vote
+
+#### Blueprint Deployment (Alternative)
+
+Use `render.yaml` for one-click deployment:
+- Render Dashboard → New + → Blueprint
+- Select repository and branch
+- Enter required secrets when prompted
+- Both services deploy automatically
 
 ## 🔒 Security Best Practices
 

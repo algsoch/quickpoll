@@ -1,5 +1,16 @@
 # QuickPoll - Quick Start Guide
 
+## 🌐 Try It Live First!
+
+**Don't want to install anything?** Try the live demo:
+- **Frontend**: [https://quickpoll-frontend-xgc3.onrender.com/](https://quickpoll-frontend-xgc3.onrender.com/)
+- **API Docs**: [https://quickpoll-api-xgc3.onrender.com/docs](https://quickpoll-api-xgc3.onrender.com/docs)
+- **Alternative**: [https://app.algsoch.tech](https://app.algsoch.tech) (Cloudflare Tunnel)
+
+> **Note**: Free tier may take 30-50 seconds to wake up on first request.
+
+---
+
 ## Prerequisites
 
 - Python 3.11 or higher
@@ -50,9 +61,9 @@ docker-compose up -d
 ```
 
 Access:
-- **Frontend**: http://localhost:3000
-- **Backend API**: http://localhost:8000
-- **API Docs**: http://localhost:8000/docs
+- **Frontend**: http://localhost:8000
+- **Backend API**: http://localhost:8080
+- **API Docs**: http://localhost:8080/docs
 
 ## Manual Setup
 
@@ -108,11 +119,11 @@ python startup.py && uvicorn backend.main:app --reload
 
 ## First Steps After Starting
 
-1. **Open API Documentation**: http://localhost:8000/docs
-2. **Register a User**: Use the `/api/users/register` endpoint
-3. **Login**: Use the `/api/users/login` endpoint to get a JWT token
-4. **Create a Poll**: Use the `/api/polls` endpoint with your token
-5. **Open Frontend**: Navigate to `frontend/index.html` in a browser
+1. **Open API Documentation**: http://localhost:8080/docs (or live: https://quickpoll-api-xgc3.onrender.com/docs)
+2. **Open Frontend**: http://localhost:8000 (or live: https://quickpoll-frontend-xgc3.onrender.com/)
+3. **Register a User**: Use the signup form on the frontend or `/api/users/register` endpoint
+4. **Login**: Use the login form to get authenticated
+5. **Create a Poll**: Click "Create New Poll" and start polling!
 
 ## Testing the Application
 
@@ -154,12 +165,12 @@ DATABASE_URL=postgresql+asyncpg://postgres:password@localhost/quickpoll
 DATABASE_URL=postgresql+asyncpg://quickpoll_admin:your-password@quickpoll-server.postgres.database.azure.com/quickpolldb?sslmode=require
 ```
 
-### Issue: "Port 8000 already in use"
+### Issue: "Port 8080 already in use"
 
 **Solution**: Either stop the other service or use a different port:
 
 ```bash
-uvicorn backend.main:app --port 8001 --reload
+uvicorn backend.main:app --port 8081 --reload
 ```
 
 ### Issue: "Module not found"
