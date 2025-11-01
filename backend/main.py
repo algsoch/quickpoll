@@ -42,28 +42,48 @@ async def lifespan(app: FastAPI):
     print(f"Environment: {settings.environment}")
     print(f"Database: {settings.database_url.split('@')[1] if '@' in settings.database_url else 'configured'}")
 
-    # Check database connection
+    # Check database connection with retries for cloud deployment
     print("Checking database connection...")
-    db_ok = await check_db_connection()
+    max_retries = 3
+    retry_delay = 2
+    db_ok = False
+    
+    for attempt in range(max_retries):
+        try:
+            db_ok = await check_db_connection()
+            if db_ok:
+                print(f"Database connection successful! (attempt {attempt + 1}/{max_retries})")
+                break
+            else:
+                print(f"Database connection failed (attempt {attempt + 1}/{max_retries})")
+        except Exception as e:
+            print(f"Database connection error (attempt {attempt + 1}/{max_retries}): {e}")
+        
+        if attempt < max_retries - 1:
+            print(f"Retrying in {retry_delay} seconds...")
+            import asyncio
+            await asyncio.sleep(retry_delay)
+    
     if not db_ok:
-        print("ERROR: Database connection failed!")
-        print("Please check your DATABASE_URL in .env file")
-        sys.exit(1)
-
-    print("Database connection successful!")
-
-    # Initialize database (create tables if needed)
-    print("Initializing database schema...")
-    try:
-        await init_db()
-        print("Database schema initialized successfully!")
-    except Exception as e:
-        print(f"ERROR: Failed to initialize database schema: {e}")
-        sys.exit(1)
+        print("WARNING: Database connection failed after retries!")
+        print("Application will start but database operations may fail")
+        print("Please check:")
+        print("1. DATABASE_URL is correct")
+        print("2. Azure PostgreSQL firewall allows Render IPs")
+        print("3. Database server is running")
+        # Don't exit - let the app start anyway for debugging
+    else:
+        # Initialize database (create tables if needed)
+        print("Initializing database schema...")
+        try:
+            await init_db()
+            print("Database schema initialized successfully!")
+        except Exception as e:
+            print(f"WARNING: Failed to initialize database schema: {e}")
+            print("Application will start but some features may not work")
 
     print("Application started successfully!")
-    print(f"API Docs: http://{settings.host}:{settings.port}/docs")
-    print(f"Health Check: http://{settings.host}:{settings.port}/health")
+    print(f"Health Check: /health")
 
     yield
 
@@ -149,9 +169,20 @@ except Exception as e:
 @app.get("/health", response_model=HealthCheck, tags=["health"])
 async def health_check():
     """Health check endpoint"""
-    db_status = "healthy" if await check_db_connection() else "unhealthy"
+    try:
+        db_status = "healthy" if await check_db_connection() else "unhealthy"
+    except Exception as e:
+        print(f"Health check DB error: {e}")
+        db_status = "unhealthy"
 
     return HealthCheck(status="healthy", database=db_status, timestamp=datetime.utcnow())
+
+
+# Simple ping endpoint (no DB required - for Render health checks)
+@app.get("/ping", tags=["health"])
+async def ping():
+    """Simple ping endpoint without database check"""
+    return {"status": "ok", "timestamp": datetime.utcnow().isoformat()}
 
 
 # Visitor statistics endpoint
