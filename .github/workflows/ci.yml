@@ -50,6 +50,14 @@ jobs:
     - name: Run database migrations
       env:
         DATABASE_URL: postgresql+asyncpg://quickpoll_test:test_password@localhost:5432/quickpoll_test
+        SECRET_KEY: test-secret-key-for-ci-minimum-32-characters-long
+        GEMINI_API_KEY: test-gemini-key-for-ci-pipeline
+        ADMIN_PASSWORD: TestAdmin123!
+        ALGORITHM: HS256
+        ACCESS_TOKEN_EXPIRE_MINUTES: 30
+        ENVIRONMENT: test
+        ALLOWED_ORIGINS: http://localhost:8000
+        RATE_LIMIT_PER_MINUTE: 60
       run: |
         alembic upgrade head
 
