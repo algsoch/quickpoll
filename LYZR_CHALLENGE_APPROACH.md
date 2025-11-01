@@ -619,13 +619,13 @@ async def authenticated_client(async_client):
 
 **Backend Environment Variables (Render)**:
 ```env
-DATABASE_URL=postgresql+asyncpg://quickpoll:Iit7065%40@vickykumar.postgres.database.azure.com:5432/quickpoll?ssl=require
-SECRET_KEY=production-secret-key-must-be-at-least-32-characters-long
+DATABASE_URL=postgresql+asyncpg://user:password@your-server.postgres.database.azure.com:5432/dbname?ssl=require
+SECRET_KEY=your-production-secret-key-must-be-at-least-32-characters-long
 GEMINI_API_KEY=your-gemini-api-key-for-ai-features
 ADMIN_USERNAME=admin
-ADMIN_PASSWORD=secure-admin-password-for-stats
+ADMIN_PASSWORD=your-secure-admin-password
 ENVIRONMENT=production
-ALLOWED_ORIGINS=https://quickpoll-frontend-xgc3.onrender.com,http://localhost:8000,https://app.algsoch.tech
+ALLOWED_ORIGINS=https://your-frontend.onrender.com,http://localhost:8000
 ALGORITHM=HS256
 ACCESS_TOKEN_EXPIRE_MINUTES=30
 ```
