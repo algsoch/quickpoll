@@ -499,3 +499,6 @@ class UserProfileResponse(UserResponse):
     
     model_config = {"from_attributes": True}
 
+
+# Resolve forward references
+PollResponse.model_rebuild()
