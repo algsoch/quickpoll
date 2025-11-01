@@ -50,7 +50,7 @@ jobs:
     - name: Create database tables
       env:
         DATABASE_URL: postgresql+asyncpg://quickpoll_test:test_password@localhost:5432/quickpoll_test
-        SECRET_KEY: test-secret-key-for-ci-32-chars
+        SECRET_KEY: test-secret-key-32chars-min-ok
         GEMINI_API_KEY: test-gemini-key-for-ci-pipeline
         ADMIN_PASSWORD: TestAdmin123!
         ALGORITHM: HS256
@@ -76,7 +76,7 @@ jobs:
     - name: Run tests
       env:
         DATABASE_URL: postgresql+asyncpg://quickpoll_test:test_password@localhost:5432/quickpoll_test
-        SECRET_KEY: test-secret-key-for-ci-32-chars
+        SECRET_KEY: test-secret-key-32chars-min-ok
         GEMINI_API_KEY: test-gemini-key
         ADMIN_PASSWORD: TestAdmin123!
         ALGORITHM: HS256
