@@ -1,0 +1,40 @@
+name: Keep Render Services Alive
+
+on:
+  schedule:
+    # Run every 10 minutes
+    - cron: '*/10 * * * *'
+  workflow_dispatch: # Allow manual trigger
+
+jobs:
+  ping-services:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Ping Backend API
+        run: |
+          echo "Pinging backend..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-api-xgc3.onrender.com/health)
+          echo "Backend response: $response"
+          if [ $response -eq 200 ]; then
+            echo "✅ Backend is alive!"
+          else
+            echo "⚠️ Backend returned: $response"
+          fi
+      
+      - name: Ping Frontend
+        run: |
+          echo "Pinging frontend..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-frontend-xgc3.onrender.com/)
+          echo "Frontend response: $response"
+          if [ $response -eq 200 ]; then
+            echo "✅ Frontend is alive!"
+          else
+            echo "⚠️ Frontend returned: $response"
+          fi
+      
+      - name: Report Status
+        run: |
+          echo "================================================"
+          echo "Keep-Alive Ping Completed at $(date)"
+          echo "================================================"
