@@ -1,4 +1,4 @@
-// QuickPoll Frontend Application - v66 (Multi-platform deployment support)
+// QuickPoll Frontend Application - v67 (Updated for Render deployment)
 // Configuration
 const API_BASE_URL = (() => {
     const hostname = window.location.hostname;
@@ -8,9 +8,10 @@ const API_BASE_URL = (() => {
         return `http://${hostname}:8080`;
     }
     
-    // Render deployment
-    if (hostname === 'quickpoll-frontend.onrender.com') {
-        return 'https://quickpoll-api.onrender.com';
+    // Render deployment - match any quickpoll-frontend-*.onrender.com
+    if (hostname.includes('quickpoll-frontend') && hostname.endsWith('.onrender.com')) {
+        // Replace frontend with api in the hostname
+        return `https://quickpoll-api-xgc3.onrender.com`;
     }
     
     // Cloudflare tunnel / custom domain
