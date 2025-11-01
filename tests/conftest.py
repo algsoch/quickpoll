@@ -3,6 +3,7 @@ Pytest configuration and fixtures
 """
 
 import asyncio
+import os
 import pytest
 import pytest_asyncio
 from typing import AsyncGenerator, Generator
@@ -15,8 +16,8 @@ from backend.config import settings
 from backend.models import User
 from backend.auth import get_password_hash
 
-# Test database URL (use in-memory SQLite for tests)
-TEST_DATABASE_URL = "sqlite+aiosqlite:///:memory:"
+# Use DATABASE_URL from environment (PostgreSQL in CI, SQLite locally if preferred)
+TEST_DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///:memory:")
 
 # Create test engine
 test_engine = create_async_engine(TEST_DATABASE_URL, echo=False)
