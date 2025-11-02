@@ -335,11 +335,11 @@ pip install -r requirements.txt
 alembic upgrade head
 
 # Start backend
-uvicorn backend.main:app --reload --host 0.0.0.0 --port 8000
+uvicorn backend.main:app --reload --host 0.0.0.0 --port 8080
 
 # Serve frontend (in another terminal)
 # Use any static file server, e.g.:
-python -m http.server 8000 --directory frontend
+python -m http.server 8030 --directory frontend
 ```
 
 ## 📝 API Documentation
