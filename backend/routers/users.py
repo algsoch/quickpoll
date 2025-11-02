@@ -55,50 +55,72 @@ async def check_username_availability(username: str, db: AsyncSession = Depends(
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 async def register_user(user_data: UserCreate, db: AsyncSession = Depends(get_db)):
     """Register a new user"""
-    # Check if username exists
-    existing_user = await get_user_by_username(db, user_data.username)
-    if existing_user:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered"
+    try:
+        # Check if username exists
+        existing_user = await get_user_by_username(db, user_data.username)
+        if existing_user:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Username already registered"
+            )
+
+        # Check if email exists
+        existing_email = await get_user_by_email(db, user_data.email)
+        if existing_email:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+            )
+
+        # Create new user
+        hashed_password = get_password_hash(user_data.password)
+        new_user = User(
+            username=user_data.username, email=user_data.email, hashed_password=hashed_password
         )
 
-    # Check if email exists
-    existing_email = await get_user_by_email(db, user_data.email)
-    if existing_email:
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+
+        return new_user
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ REGISTRATION ERROR for {user_data.username}: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
         raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST, detail="Email already registered"
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Registration error: {type(e).__name__}",
         )
-
-    # Create new user
-    hashed_password = get_password_hash(user_data.password)
-    new_user = User(
-        username=user_data.username, email=user_data.email, hashed_password=hashed_password
-    )
-
-    db.add(new_user)
-    await db.commit()
-    await db.refresh(new_user)
-
-    return new_user
 
 
 @router.post("/login", response_model=Token)
 async def login_user(user_data: UserLogin, db: AsyncSession = Depends(get_db)):
     """Authenticate user and return JWT token"""
-    user = await authenticate_user(db, user_data.username, user_data.password)
-    if not user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Incorrect username or password",
-            headers={"WWW-Authenticate": "Bearer"},
+    try:
+        user = await authenticate_user(db, user_data.username, user_data.password)
+        if not user:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Incorrect username or password",
+                headers={"WWW-Authenticate": "Bearer"},
+            )
+
+        access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
+        access_token = create_access_token(
+            data={"sub": user.username, "user_id": user.id}, expires_delta=access_token_expires
         )
 
-    access_token_expires = timedelta(minutes=settings.access_token_expire_minutes)
-    access_token = create_access_token(
-        data={"sub": user.username, "user_id": user.id}, expires_delta=access_token_expires
-    )
-
-    return {"access_token": access_token, "token_type": "bearer"}
+        return {"access_token": access_token, "token_type": "bearer"}
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"❌ LOGIN ERROR for {user_data.username}: {type(e).__name__}: {e}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Login error: {type(e).__name__}",
+        )
 
 
 @router.get("/me", response_model=UserResponse)
