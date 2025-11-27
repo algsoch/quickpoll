@@ -2,7 +2,7 @@ name: Keep Render Services Alive
 
 on:
   schedule:
-    # Run every 10 minutes
+    # Run every 10 minutes to prevent Render free tier from sleeping
     - cron: '*/10 * * * *'
   workflow_dispatch: # Allow manual trigger
 
@@ -11,10 +11,10 @@ jobs:
     runs-on: ubuntu-latest
     
     steps:
-      - name: Ping Backend API
+      - name: Ping Backend API (New Account)
         run: |
-          echo "Pinging backend..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-api-xgc3.onrender.com/health)
+          echo "Pinging backend (3lqv)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-api-3lqv.onrender.com/health)
           echo "Backend response: $response"
           if [ $response -eq 200 ]; then
             echo "✅ Backend is alive!"
@@ -22,10 +22,10 @@ jobs:
             echo "⚠️ Backend returned: $response"
           fi
       
-      - name: Ping Frontend
+      - name: Ping Frontend (New Account)
         run: |
-          echo "Pinging frontend..."
-          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-frontend-xgc3.onrender.com/)
+          echo "Pinging frontend (7nyx)..."
+          response=$(curl -s -o /dev/null -w "%{http_code}" https://quickpoll-frontend-7nyx.onrender.com/)
           echo "Frontend response: $response"
           if [ $response -eq 200 ]; then
             echo "✅ Frontend is alive!"
@@ -37,4 +37,7 @@ jobs:
         run: |
           echo "================================================"
           echo "Keep-Alive Ping Completed at $(date)"
+          echo "Services pinged:"
+          echo "  - Backend: https://quickpoll-api-3lqv.onrender.com"
+          echo "  - Frontend: https://quickpoll-frontend-7nyx.onrender.com"
           echo "================================================"
