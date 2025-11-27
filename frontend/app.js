@@ -1,24 +1,52 @@
-// QuickPoll Frontend Application - v67 (Updated for Render deployment)
+// QuickPoll Frontend Application - v68 (Updated for new Render deployment)
 // Configuration
-const API_BASE_URL = (() => {
+// Read primary/fallback API URLs from meta tags
+// OLD account (xgc3) is SUSPENDED - only use NEW account (3lqv)
+const META_API_PRIMARY = document.querySelector('meta[name="api-primary"]')?.content;
+const META_API_FALLBACK = document.querySelector('meta[name="api-fallback"]')?.content;
+
+function deriveApiFromHostname() {
     const hostname = window.location.hostname;
-    
+
     // Local development (localhost or LAN IP)
     if (hostname === 'localhost' || hostname.startsWith('192.168.') || hostname.startsWith('10.')) {
         return `http://${hostname}:8080`;
     }
-    
-    // Render deployment - match any quickpoll-frontend-*.onrender.com
-    if (hostname.includes('quickpoll-frontend') && hostname.endsWith('.onrender.com')) {
-        // Replace frontend with api in the hostname
-        return `https://quickpoll-api-xgc3.onrender.com`;
-    }
-    
-    // Cloudflare tunnel / custom domain
-    return 'https://api.algsoch.tech';
-})();
 
-const WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
+    // Render deployment - if frontend has the quickpoll-frontend-<suffix>.onrender.com pattern,
+    // derive the API host with the same suffix. This is useful when both frontend and backend
+    // are created from the same Render blueprint and share suffixes.
+    if (hostname.includes('quickpoll-frontend') && hostname.endsWith('.onrender.com')) {
+        const match = hostname.match(/quickpoll-frontend-([a-z0-9]+)\.onrender\.com/);
+        if (match) {
+            return `https://quickpoll-api-${match[1]}.onrender.com`;
+        }
+        // If pattern exists but can't extract, don't crash — return null to let other candidates win
+        return null;
+    }
+
+    // Custom domain fallback
+    return 'https://api.algsoch.tech';
+}
+
+// Build ordered candidate list for API endpoint selection
+// Only use active backends - old account (xgc3) is suspended
+function buildApiCandidates() {
+    const candidates = [];
+    if (META_API_PRIMARY) candidates.push(META_API_PRIMARY);
+    const derived = deriveApiFromHostname();
+    if (derived) candidates.push(derived);
+    if (META_API_FALLBACK) candidates.push(META_API_FALLBACK);
+    // Final fallback
+    candidates.push('https://api.algsoch.tech');
+
+    // Deduplicate while preserving order
+    return [...new Set(candidates.filter(Boolean))];
+}
+
+// Start with a safe default (will be overwritten by wakeUpAPI if a better candidate is found)
+let API_BASE_URL = META_API_PRIMARY || deriveApiFromHostname() || META_API_FALLBACK || 'https://api.algsoch.tech';
+let WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
 
 // Reaction constants
 const ALLOWED_EMOJIS = ["👍", "👎", "😂", "❤️", "🎉", "🤔"];
@@ -78,10 +106,80 @@ function updateThemeIcon(theme) {
 }
 
 // Initialize app
-document.addEventListener('DOMContentLoaded', () => {
+document.addEventListener('DOMContentLoaded', async () => {
     initializeTheme();
+    // Try candidates and pick the first responsive API before initializing the app
+    await wakeUpAPI(); // wakeUpAPI will update API_BASE_URL and WS_BASE_URL
     initializeApp();
 });
+
+// Wake up API on page load (for Render free tier cold starts)
+async function wakeUpAPI() {
+    console.log('🔄 Waking up API server (probing candidates)...');
+    const wakeupIndicator = document.getElementById('wakeupIndicator');
+    if (wakeupIndicator) {
+        wakeupIndicator.style.display = 'flex';
+        wakeupIndicator.innerHTML = '<div class="wakeup-spinner"></div><span>Waking up server (free tier)...</span>';
+    }
+
+    const candidates = buildApiCandidates();
+    console.log('API candidates:', candidates);
+
+    let chosen = null;
+
+    for (const candidate of candidates) {
+        try {
+            const startTime = Date.now();
+
+            // Prefer /ping, then /health, then root as last-resort probe
+            const probes = [`${candidate}/ping`, `${candidate}/health`, `${candidate}/`];
+            let probeOk = false;
+
+            for (const probe of probes) {
+                try {
+                    const resp = await fetch(probe, { method: 'GET', headers: { 'Accept': 'application/json' } });
+                    const elapsed = Date.now() - startTime;
+                    // Treat 200-399 as healthy; 404 on /ping may mean server doesn't expose /ping, try next probe
+                    if (resp.ok) {
+                        console.log(`✅ ${probe} responded OK (${elapsed}ms)`);
+                        probeOk = true;
+                        break;
+                    } else {
+                        console.log(`ℹ️ ${probe} responded ${resp.status}`);
+                        // continue to next probe
+                    }
+                } catch (err) {
+                    console.log(`✖️ Probe failed for ${probe}:`, err.message);
+                }
+            }
+
+            if (probeOk) {
+                chosen = candidate;
+                break;
+            }
+        } catch (error) {
+            console.warn('Error probing candidate', candidate, error.message);
+        }
+    }
+
+    if (chosen) {
+        API_BASE_URL = chosen;
+        WS_BASE_URL = API_BASE_URL.replace('http', 'ws').replace('https', 'wss');
+        console.log('➡️ Selected API_BASE_URL =', API_BASE_URL);
+        if (wakeupIndicator) {
+            wakeupIndicator.innerHTML = '<span>✅ Server ready!</span>';
+            setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 1200);
+        }
+    } else {
+        console.warn('⚠️ No API candidates responded; using default:', API_BASE_URL);
+        if (wakeupIndicator) {
+            wakeupIndicator.innerHTML = '<span>⚠️ Unable to reach API. Proceeding with default configuration.</span>';
+            setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 3000);
+        }
+    }
+
+    return API_BASE_URL;
+}
 
 function initializeApp() {
     // Check for OAuth callback with token

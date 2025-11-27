@@ -2,12 +2,22 @@
 Async database configuration with SQLAlchemy 2.0
 """
 
+import ssl
 from typing import AsyncGenerator
 from sqlalchemy import text
 from sqlalchemy.ext.asyncio import AsyncSession, create_async_engine, async_sessionmaker
 from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.pool import NullPool
 from backend.config import settings
+
+
+# Create SSL context for Azure PostgreSQL
+def get_ssl_context():
+    """Create SSL context for secure database connections"""
+    ssl_context = ssl.create_default_context()
+    ssl_context.check_hostname = False
+    ssl_context.verify_mode = ssl.CERT_NONE  # For Azure, you may need CERT_REQUIRED with proper CA
+    return ssl_context
 
 
 # Create async engine
@@ -24,6 +34,9 @@ else:
     # PostgreSQL connection pool settings
     engine_options["pool_size"] = 5
     engine_options["max_overflow"] = 10
+    # Add SSL for production Azure PostgreSQL
+    if settings.is_production:
+        engine_options["connect_args"] = {"ssl": get_ssl_context()}
 
 engine = create_async_engine(
     settings.database_url,

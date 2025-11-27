@@ -3,6 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <!-- 
+        API URL Configuration for Render Deployment
+        =============================================
+        Account 1 (OLD - xgc3): SUSPENDED - free tier exhausted
+        Account 2 (NEW - 3lqv): ACTIVE - current primary
+        
+          https://quickpoll-frontend-7nyx.onrender.com
+        https://quickpoll-api-3lqv.onrender.com
+        http://localhost:8000      Frontend URLs:
+          - https://quickpoll-frontend-7nyx.onrender.com (new account)
+          - https://quickpoll-frontend-xgc3.onrender.com (old - suspended)
+        
+        Backend URLs:
+          - https://quickpoll-api-3lqv.onrender.com (new account - ACTIVE)
+          - https://quickpoll-api-xgc3.onrender.com (old - SUSPENDED)
+    -->
+    <meta name="api-primary" content="https://quickpoll-api-3lqv.onrender.com">
+    <meta name="api-fallback" content="https://api.algsoch.tech">
     <title>QuickPoll - Real-time Polling App</title>
     <link rel="stylesheet" href="styles.css?v=30">
     <link rel="icon" type="image/png" href="public/images/fevicon.png">
@@ -10,6 +28,12 @@
     <script src="https://cdn.jsdelivr.net/npm/countup.js@2.8.0/dist/countUp.umd.min.js"></script>
 </head>
 <body>
+    <!-- API Wake-up Indicator -->
+    <div id="wakeupIndicator" class="wakeup-indicator" style="display: none;">
+        <div class="wakeup-spinner"></div>
+        <span>Waking up server (free tier)...</span>
+    </div>
+    
     <div id="app">
         <!-- Header -->
         <header class="header">

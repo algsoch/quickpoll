@@ -56,12 +56,22 @@ class Settings(BaseSettings):
     @field_validator("database_url")
     @classmethod
     def validate_database_url(cls, v: str) -> str:
-        """Ensure database URL is properly formatted"""
+        """Ensure database URL is properly formatted for asyncpg"""
         if not v.startswith(("postgresql://", "postgresql+asyncpg://")):
             raise ValueError("DATABASE_URL must be a PostgreSQL connection string")
         # Convert to asyncpg if needed
         if v.startswith("postgresql://") and not v.startswith("postgresql+asyncpg://"):
             v = v.replace("postgresql://", "postgresql+asyncpg://", 1)
+        # Remove sslmode from URL as asyncpg handles SSL differently
+        # SSL will be configured in database.py using connect_args
+        if "sslmode=" in v:
+            # Remove sslmode parameter from URL
+            import re
+            v = re.sub(r'[?&]sslmode=[^&]*', '', v)
+            # Clean up any leftover ? or & at the end
+            v = v.rstrip('?&')
+            # If we removed ?sslmode but there are other params with &, fix the URL
+            v = v.replace('?&', '?')
         return v
 
     @field_validator("secret_key")
