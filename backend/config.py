@@ -84,8 +84,21 @@ class Settings(BaseSettings):
 
     @property
     def cors_origins(self) -> List[str]:
-        """Parse CORS origins from comma-separated string"""
-        return [origin.strip() for origin in self.allowed_origins.split(",")]
+        """Parse CORS origins from comma-separated string and add Render defaults"""
+        origins = [origin.strip() for origin in self.allowed_origins.split(",")]
+        
+        # In production, always include common Render frontend URLs
+        if self.is_production:
+            render_origins = [
+                "https://quickpoll-frontend-7nyx.onrender.com",
+                "https://quickpoll-frontend-xgc3.onrender.com",
+                "https://quickpoll-frontend.onrender.com",
+            ]
+            for ro in render_origins:
+                if ro not in origins:
+                    origins.append(ro)
+        
+        return origins
 
     @property
     def is_production(self) -> bool:
