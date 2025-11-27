@@ -114,6 +114,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 });
 
 // Wake up API on page load (for Render free tier cold starts)
+// Render free tier can take 30-60 seconds to wake up from sleep
 async function wakeUpAPI() {
     console.log('🔄 Waking up API server (probing candidates)...');
     const wakeupIndicator = document.getElementById('wakeupIndicator');
@@ -126,40 +127,76 @@ async function wakeUpAPI() {
     console.log('API candidates:', candidates);
 
     let chosen = null;
+    const maxRetries = 3;  // Retry up to 3 times for cold starts
+    const retryDelay = 15000;  // Wait 15 seconds between retries (Render cold start takes ~30-60s)
+    const fetchTimeout = 20000;  // 20 second timeout per request
 
-    for (const candidate of candidates) {
+    // Helper function to fetch with timeout
+    async function fetchWithTimeout(url, options = {}, timeout = fetchTimeout) {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), timeout);
         try {
-            const startTime = Date.now();
-
-            // Prefer /ping, then /health, then root as last-resort probe
-            const probes = [`${candidate}/ping`, `${candidate}/health`, `${candidate}/`];
-            let probeOk = false;
-
-            for (const probe of probes) {
-                try {
-                    const resp = await fetch(probe, { method: 'GET', headers: { 'Accept': 'application/json' } });
-                    const elapsed = Date.now() - startTime;
-                    // Treat 200-399 as healthy; 404 on /ping may mean server doesn't expose /ping, try next probe
-                    if (resp.ok) {
-                        console.log(`✅ ${probe} responded OK (${elapsed}ms)`);
-                        probeOk = true;
-                        break;
-                    } else {
-                        console.log(`ℹ️ ${probe} responded ${resp.status}`);
-                        // continue to next probe
-                    }
-                } catch (err) {
-                    console.log(`✖️ Probe failed for ${probe}:`, err.message);
-                }
-            }
-
-            if (probeOk) {
-                chosen = candidate;
-                break;
-            }
+            const response = await fetch(url, { ...options, signal: controller.signal });
+            clearTimeout(timeoutId);
+            return response;
         } catch (error) {
-            console.warn('Error probing candidate', candidate, error.message);
+            clearTimeout(timeoutId);
+            throw error;
         }
+    }
+
+    for (let retry = 0; retry < maxRetries; retry++) {
+        if (retry > 0) {
+            console.log(`🔄 Retry ${retry}/${maxRetries - 1} - Server may be waking up...`);
+            if (wakeupIndicator) {
+                wakeupIndicator.innerHTML = `<div class="wakeup-spinner"></div><span>Server is waking up... (attempt ${retry + 1}/${maxRetries})</span>`;
+            }
+            await new Promise(resolve => setTimeout(resolve, retryDelay));
+        }
+
+        for (const candidate of candidates) {
+            try {
+                const startTime = Date.now();
+
+                // Prefer /health (always exists), then /ping, then root
+                const probes = [`${candidate}/health`, `${candidate}/ping`, `${candidate}/`];
+                let probeOk = false;
+
+                for (const probe of probes) {
+                    try {
+                        console.log(`🔍 Probing ${probe}...`);
+                        const resp = await fetchWithTimeout(probe, { 
+                            method: 'GET', 
+                            headers: { 'Accept': 'application/json' }
+                        });
+                        const elapsed = Date.now() - startTime;
+                        
+                        if (resp.ok) {
+                            console.log(`✅ ${probe} responded OK (${elapsed}ms)`);
+                            probeOk = true;
+                            break;
+                        } else {
+                            console.log(`ℹ️ ${probe} responded ${resp.status}`);
+                        }
+                    } catch (err) {
+                        if (err.name === 'AbortError') {
+                            console.log(`⏱️ Timeout for ${probe} - server may be waking up`);
+                        } else {
+                            console.log(`✖️ Probe failed for ${probe}:`, err.message);
+                        }
+                    }
+                }
+
+                if (probeOk) {
+                    chosen = candidate;
+                    break;
+                }
+            } catch (error) {
+                console.warn('Error probing candidate', candidate, error.message);
+            }
+        }
+
+        if (chosen) break;
     }
 
     if (chosen) {
@@ -168,13 +205,18 @@ async function wakeUpAPI() {
         console.log('➡️ Selected API_BASE_URL =', API_BASE_URL);
         if (wakeupIndicator) {
             wakeupIndicator.innerHTML = '<span>✅ Server ready!</span>';
-            setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 1200);
+            setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 1500);
         }
     } else {
-        console.warn('⚠️ No API candidates responded; using default:', API_BASE_URL);
+        console.warn('⚠️ No API candidates responded after retries; using default:', API_BASE_URL);
         if (wakeupIndicator) {
-            wakeupIndicator.innerHTML = '<span>⚠️ Unable to reach API. Proceeding with default configuration.</span>';
-            setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 3000);
+            wakeupIndicator.innerHTML = `
+                <span>⚠️ Server is starting up. Please wait or </span>
+                <button onclick="location.reload()" style="margin-left: 8px; padding: 4px 12px; cursor: pointer; border-radius: 4px; border: 1px solid #ccc;">
+                    🔄 Refresh
+                </button>
+            `;
+            // Don't auto-hide - let user click refresh
         }
     }
 
