@@ -19,13 +19,19 @@ class EmailService:
     """Email service with support for SMTP and Resend API"""
     
     def __init__(self):
-        self.smtp_host = getattr(settings, 'smtp_host', None)
-        self.smtp_port = getattr(settings, 'smtp_port', 587)
-        self.smtp_user = getattr(settings, 'smtp_user', None)
-        self.smtp_password = getattr(settings, 'smtp_password', None)
-        self.smtp_from_email = getattr(settings, 'smtp_from_email', None)
-        self.smtp_from_name = getattr(settings, 'smtp_from_name', 'QuickPoll')
-        self.resend_api_key = getattr(settings, 'resend_api_key', None)
+        self.smtp_host = getattr(settings, 'smtp_host', '') or ''
+        self.smtp_port = getattr(settings, 'smtp_port', 587) or 587
+        self.smtp_user = getattr(settings, 'smtp_user', '') or ''
+        self.smtp_password = getattr(settings, 'smtp_password', '') or ''
+        self.smtp_from_email = getattr(settings, 'smtp_from_email', '') or ''
+        self.smtp_from_name = getattr(settings, 'smtp_from_name', 'QuickPoll') or 'QuickPoll'
+        self.resend_api_key = getattr(settings, 'resend_api_key', '') or ''
+        
+        # Log configuration status at startup
+        print(f"[EmailService] SMTP configured: {self._is_smtp_configured}")
+        print(f"[EmailService] SMTP Host: {self.smtp_host or 'NOT SET'}")
+        print(f"[EmailService] SMTP User: {self.smtp_user or 'NOT SET'}")
+        print(f"[EmailService] Resend configured: {self._is_resend_configured}")
         
     @property
     def is_configured(self) -> bool:
@@ -35,7 +41,7 @@ class EmailService:
     @property
     def _is_smtp_configured(self) -> bool:
         """Check if SMTP is configured"""
-        return all([self.smtp_host, self.smtp_user, self.smtp_password, self.smtp_from_email])
+        return bool(self.smtp_host and self.smtp_user and self.smtp_password and self.smtp_from_email)
     
     @property
     def _is_resend_configured(self) -> bool:
@@ -53,10 +59,12 @@ class EmailService:
         Send an email using the configured provider.
         Returns dict with 'success' bool and 'message' or 'error' string.
         """
+        print(f"[EmailService] Attempting to send email to: {to_email}")
+        print(f"[EmailService] Email configured: {self.is_configured}")
+        
         if not self.is_configured:
             print(f"[DEV MODE] Email would be sent to: {to_email}")
             print(f"[DEV MODE] Subject: {subject}")
-            print(f"[DEV MODE] Content: {html_content[:500]}...")
             return {
                 "success": False,
                 "dev_mode": True,
@@ -130,18 +138,27 @@ class EmailService:
             part2 = MIMEText(html_content, "html")
             message.attach(part2)
             
-            # Connect and send
+            # Connect and send with timeout
             context = ssl.create_default_context()
             
-            with smtplib.SMTP(self.smtp_host, self.smtp_port) as server:
+            with smtplib.SMTP(self.smtp_host, self.smtp_port, timeout=10) as server:
                 server.starttls(context=context)
                 server.login(self.smtp_user, self.smtp_password)
                 server.sendmail(self.smtp_from_email, to_email, message.as_string())
             
             return {"success": True, "message": "Email sent successfully via SMTP"}
             
-        except Exception as e:
+        except smtplib.SMTPAuthenticationError as e:
+            print(f"SMTP Authentication error: {e}")
+            return {"success": False, "error": "Email authentication failed. Check SMTP credentials."}
+        except smtplib.SMTPException as e:
             print(f"SMTP error: {e}")
+            return {"success": False, "error": f"Email sending failed: {str(e)}"}
+        except TimeoutError as e:
+            print(f"SMTP timeout: {e}")
+            return {"success": False, "error": "Email server connection timed out"}
+        except Exception as e:
+            print(f"Email error: {e}")
             return {"success": False, "error": str(e)}
 
 
