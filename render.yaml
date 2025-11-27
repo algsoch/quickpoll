@@ -37,7 +37,7 @@ services:
         sync: false
       - key: GOOGLE_REDIRECT_URI
         sync: false
-      # Email Configuration
+      # Email Configuration (SMTP as backup)
       - key: SMTP_HOST
         value: smtp.gmail.com
       - key: SMTP_PORT
@@ -50,6 +50,9 @@ services:
         sync: false
       - key: SMTP_FROM_NAME
         value: QuickPoll
+      # Resend API (Primary - works on Render free tier)
+      - key: RESEND_API_KEY
+        sync: false
       - key: FRONTEND_URL
         sync: false
 
