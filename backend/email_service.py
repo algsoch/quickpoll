@@ -97,6 +97,11 @@ class EmailService:
     ) -> dict:
         """Send email via Resend API"""
         try:
+            # For Resend free tier, must use onboarding@resend.dev
+            # For paid/verified domains, can use custom email
+            from_email = "onboarding@resend.dev"
+            from_name = self.smtp_from_name or "QuickPoll"
+            
             async with httpx.AsyncClient() as client:
                 response = await client.post(
                     "https://api.resend.com/emails",
@@ -105,7 +110,7 @@ class EmailService:
                         "Content-Type": "application/json"
                     },
                     json={
-                        "from": f"{self.smtp_from_name} <{self.smtp_from_email or 'onboarding@resend.dev'}>",
+                        "from": f"{from_name} <{from_email}>",
                         "to": [to_email],
                         "subject": subject,
                         "html": html_content,
