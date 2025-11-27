@@ -49,6 +49,26 @@ class Settings(BaseSettings):
         alias="GOOGLE_REDIRECT_URI"
     )
 
+    # Email Configuration (SMTP)
+    # Use Gmail: smtp_host=smtp.gmail.com, smtp_port=587, smtp_user=your@gmail.com, smtp_password=app_password
+    # Use Outlook: smtp_host=smtp.office365.com, smtp_port=587
+    smtp_host: str = Field(default="", alias="SMTP_HOST")
+    smtp_port: int = Field(default=587, alias="SMTP_PORT")
+    smtp_user: str = Field(default="", alias="SMTP_USER")
+    smtp_password: str = Field(default="", alias="SMTP_PASSWORD")
+    smtp_from_email: str = Field(default="", alias="SMTP_FROM_EMAIL")
+    smtp_from_name: str = Field(default="QuickPoll", alias="SMTP_FROM_NAME")
+    
+    # Resend API (alternative email provider - recommended for production)
+    # Get free API key at https://resend.com - 100 emails/day free
+    resend_api_key: str = Field(default="", alias="RESEND_API_KEY")
+    
+    # Frontend URL (for password reset links)
+    frontend_url: str = Field(
+        default="http://localhost:3000",
+        alias="FRONTEND_URL"
+    )
+
     model_config = SettingsConfigDict(
         env_file=".env", env_file_encoding="utf-8", case_sensitive=False, extra="ignore"
     )

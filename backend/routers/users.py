@@ -28,6 +28,7 @@ from backend.config import settings
 from backend.database import get_db
 from backend.models import User
 from backend.schemas import Token, UserCreate, UserLogin, UserResponse, ForgotPasswordRequest, ResetPasswordRequest, UserProfileResponse, UserProfileUpdate, PollListResponse
+from backend.email_service import email_service, get_password_reset_email_html, get_password_reset_email_text
 
 router = APIRouter(prefix="/api/users", tags=["users"])
 
@@ -192,7 +193,7 @@ async def get_public_stats(db: AsyncSession = Depends(get_db)):
 
 @router.post("/forgot-password", status_code=status.HTTP_200_OK)
 async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Depends(get_db)):
-    """Request password reset - generates reset token"""
+    """Request password reset - generates reset token and sends email"""
     # Find user by email
     user = await get_user_by_email(db, request.email)
     
@@ -214,17 +215,43 @@ async def forgot_password(request: ForgotPasswordRequest, db: AsyncSession = Dep
     user.reset_token_expires = token_expires
     await db.commit()
     
-    # TODO: In production, send email with reset link
-    # For now, we'll just return the token (for development/testing)
-    # Email would contain link like: https://yourapp.com/reset-password?token={reset_token}
+    # Build reset URL using configured frontend URL
+    frontend_url = settings.frontend_url.rstrip('/')
+    reset_url = f"{frontend_url}/?token={reset_token}"
     
     print(f"Password reset token for {user.email}: {reset_token}")
-    print(f"Reset link: http://localhost:3000/reset-password?token={reset_token}")
+    print(f"Reset link: {reset_url}")
     
-    return {
-        "message": "If an account exists with this email, a password reset link has been sent.",
-        "dev_token": reset_token  # Remove this in production!
-    }
+    # Try to send email
+    email_result = await email_service.send_email(
+        to_email=user.email,
+        subject="Reset your QuickPoll password",
+        html_content=get_password_reset_email_html(reset_url, user.username),
+        text_content=get_password_reset_email_text(reset_url, user.username)
+    )
+    
+    # If email is not configured, return dev_token for testing
+    if email_result.get("dev_mode"):
+        return {
+            "message": "If an account exists with this email, a password reset link has been sent.",
+            "dev_token": reset_token,  # Only returned when email is not configured
+            "dev_mode": True
+        }
+    
+    # Email was sent (or attempted)
+    if email_result.get("success"):
+        return {
+            "message": "If an account exists with this email, a password reset link has been sent.",
+            "email_sent": True
+        }
+    else:
+        # Email failed but token is still valid - return dev_token as fallback
+        print(f"Email send failed: {email_result.get('error')}")
+        return {
+            "message": "If an account exists with this email, a password reset link has been sent.",
+            "dev_token": reset_token,  # Fallback if email fails
+            "email_error": True
+        }
 
 
 @router.post("/reset-password", status_code=status.HTTP_200_OK)

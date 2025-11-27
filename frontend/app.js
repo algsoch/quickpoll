@@ -207,6 +207,8 @@ async function wakeUpAPI() {
             wakeupIndicator.innerHTML = '<span>✅ Server ready!</span>';
             setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 1500);
         }
+        // Update connection status to connected
+        updateConnectionStatus('connected', 'Backend connected');
     } else {
         console.warn('⚠️ No API candidates responded after retries; using default:', API_BASE_URL);
         if (wakeupIndicator) {
@@ -218,9 +220,115 @@ async function wakeUpAPI() {
             `;
             // Don't auto-hide - let user click refresh
         }
+        // Update connection status to disconnected
+        updateConnectionStatus('disconnected', 'Backend offline - Click to retry');
     }
 
     return API_BASE_URL;
+}
+
+// Connection Status Management
+let connectionCheckInterval = null;
+let isBackendConnected = false;
+
+function updateConnectionStatus(status, message) {
+    const statusEl = document.getElementById('connectionStatus');
+    if (!statusEl) return;
+    
+    const dotEl = statusEl.querySelector('.connection-dot');
+    const textEl = statusEl.querySelector('.connection-text');
+    
+    // Remove all status classes
+    statusEl.classList.remove('connected', 'disconnected', 'connecting', 'hidden');
+    
+    switch (status) {
+        case 'connected':
+            statusEl.classList.add('connected');
+            textEl.textContent = '🟢 Connected';
+            statusEl.setAttribute('data-tooltip', `Connected to ${API_BASE_URL}`);
+            isBackendConnected = true;
+            // Auto-hide after 5 seconds when connected
+            setTimeout(() => {
+                if (isBackendConnected) {
+                    statusEl.classList.add('hidden');
+                }
+            }, 5000);
+            break;
+        case 'disconnected':
+            statusEl.classList.add('disconnected');
+            textEl.textContent = '🔴 Disconnected';
+            statusEl.setAttribute('data-tooltip', message || 'Click to retry connection');
+            isBackendConnected = false;
+            statusEl.classList.remove('hidden'); // Always show when disconnected
+            break;
+        case 'connecting':
+            statusEl.classList.add('connecting');
+            textEl.textContent = '🟡 Connecting...';
+            statusEl.setAttribute('data-tooltip', 'Attempting to connect...');
+            statusEl.classList.remove('hidden');
+            break;
+    }
+}
+
+// Check backend health periodically
+async function checkBackendHealth() {
+    try {
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000);
+        
+        const response = await fetch(`${API_BASE_URL}/health`, {
+            method: 'GET',
+            signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        
+        if (response.ok) {
+            const data = await response.json();
+            if (data.status === 'healthy') {
+                if (!isBackendConnected) {
+                    updateConnectionStatus('connected', 'Backend connected');
+                    showSuccessNotification('✅ Backend connection restored!');
+                }
+                return true;
+            }
+        }
+        throw new Error('Health check failed');
+    } catch (error) {
+        if (isBackendConnected) {
+            updateConnectionStatus('disconnected', 'Connection lost - Click to retry');
+            showErrorNotification('⚠️ Backend connection lost. Some features may not work.');
+        }
+        return false;
+    }
+}
+
+// Start periodic health checks
+function startConnectionMonitoring() {
+    // Initial check after a short delay
+    setTimeout(checkBackendHealth, 2000);
+    
+    // Check every 30 seconds
+    connectionCheckInterval = setInterval(checkBackendHealth, 30000);
+}
+
+// Handle click on connection status to retry
+function setupConnectionStatusClickHandler() {
+    const statusEl = document.getElementById('connectionStatus');
+    if (statusEl) {
+        statusEl.addEventListener('click', async () => {
+            if (!isBackendConnected) {
+                updateConnectionStatus('connecting', 'Retrying connection...');
+                const success = await checkBackendHealth();
+                if (!success) {
+                    // Try full wake-up process
+                    await wakeUpAPI();
+                }
+            } else {
+                // Toggle visibility when connected
+                statusEl.classList.toggle('hidden');
+            }
+        });
+    }
 }
 
 function initializeApp() {
@@ -296,6 +404,10 @@ function initializeApp() {
         // Load polls normally
         loadPolls();
     }
+    
+    // Start connection monitoring
+    setupConnectionStatusClickHandler();
+    startConnectionMonitoring();
     
     // Welcome tour is now triggered after login, not on page load
 }
@@ -1011,16 +1123,38 @@ async function handleForgotPassword(e) {
         
         if (response.ok) {
             const data = await response.json();
+            const messageEl = document.getElementById('forgotPasswordMessage');
             
-            // In development, show the token for easy testing
-            if (data.dev_token) {
-                const messageEl = document.getElementById('forgotPasswordMessage');
+            // Check if email was successfully sent
+            if (data.email_sent) {
+                // Email was sent successfully
+                messageEl.className = 'form-message success';
+                messageEl.innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">📧</div>
+                        <p style="margin-bottom: 15px; font-size: 1.1em;">
+                            <strong>Check your email!</strong>
+                        </p>
+                        <p style="color: #666; font-size: 0.95em; margin-bottom: 15px;">
+                            We've sent a password reset link to <strong>${email}</strong>
+                        </p>
+                        <p style="color: #888; font-size: 0.85em;">
+                            ⏰ The link will expire in 1 hour.<br>
+                            Don't see it? Check your spam folder.
+                        </p>
+                    </div>
+                `;
+            } else if (data.dev_token) {
+                // Development mode or email not configured
+                const isDevMode = data.dev_mode;
+                const isEmailError = data.email_error;
+                
                 messageEl.className = 'form-message success';
                 messageEl.innerHTML = `
                     <div style="text-align: center;">
                         <p style="margin-bottom: 15px;">✅ <strong>Password reset link generated!</strong></p>
                         <p style="margin-bottom: 15px; color: #666; font-size: 0.9em;">
-                            🔧 <strong>Development Mode:</strong> Email is not configured yet.<br>
+                            ${isEmailError ? '⚠️ Email delivery failed. Use the button below:' : '🔧 <strong>Development Mode:</strong> Email is not configured yet.'}<br>
                             Click the button below to reset your password directly:
                         </p>
                         <button class="btn btn-primary" style="width: 100%; max-width: 300px; margin-bottom: 10px;" id="devResetBtn">
@@ -1042,7 +1176,8 @@ async function handleForgotPassword(e) {
                     showModal('resetPasswordModal');
                 };
             } else {
-                showMessage('forgotPasswordMessage', '✅ Password reset link sent! Check your email.', 'success');
+                // Generic success message
+                showMessage('forgotPasswordMessage', '✅ If an account exists with this email, a password reset link has been sent.', 'success');
             }
             
             document.getElementById('forgotPasswordForm').reset();
@@ -1051,7 +1186,7 @@ async function handleForgotPassword(e) {
             showMessage('forgotPasswordMessage', error.detail || 'Failed to send reset link', 'error');
         }
     } catch (error) {
-        showMessage('forgotPasswordMessage', 'Network error. Please try again.', 'error');
+        showMessage('forgotPasswordMessage', '⚠️ Network error. Backend may be offline. Please try again.', 'error');
     } finally {
         submitBtn.disabled = false;
         submitBtn.innerHTML = '📨 Send Reset Link';
