@@ -71,15 +71,21 @@ class EmailService:
                 "message": "Email not configured - development mode"
             }
         
-        # Prefer Resend if configured (better deliverability)
+        # Prefer Resend if configured (works on Render free tier, better deliverability)
         if self._is_resend_configured:
             print(f"[EmailService] Using Resend API")
             return await self._send_via_resend(to_email, subject, html_content, text_content)
         
-        # Fall back to SMTP
+        # Try SMTP (may not work on Render free tier - port 587 often blocked)
         print(f"[EmailService] Using SMTP: {self.smtp_host}:{self.smtp_port}")
+        print(f"[EmailService] Note: SMTP may fail on Render free tier. Consider using Resend API instead.")
         result = await self._send_via_smtp(to_email, subject, html_content, text_content)
         print(f"[EmailService] SMTP result: {result}")
+        
+        # If SMTP failed due to network, suggest Resend
+        if not result.get("success") and "Network" in str(result.get("error", "")):
+            print(f"[EmailService] SMTP blocked. Set RESEND_API_KEY env var to use Resend API (free, works on Render)")
+        
         return result
     
     async def _send_via_resend(
