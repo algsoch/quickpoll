@@ -233,10 +233,16 @@ let isBackendConnected = false;
 
 function updateConnectionStatus(status, message) {
     const statusEl = document.getElementById('connectionStatus');
-    if (!statusEl) return;
+    if (!statusEl) {
+        console.warn('Connection status element not found');
+        return;
+    }
     
-    const dotEl = statusEl.querySelector('.connection-dot');
     const textEl = statusEl.querySelector('.connection-text');
+    if (!textEl) {
+        console.warn('Connection text element not found');
+        return;
+    }
     
     // Remove all status classes
     statusEl.classList.remove('connected', 'disconnected', 'connecting', 'hidden');
@@ -244,30 +250,31 @@ function updateConnectionStatus(status, message) {
     switch (status) {
         case 'connected':
             statusEl.classList.add('connected');
-            textEl.textContent = '🟢 Connected';
+            textEl.textContent = 'Connected';
             statusEl.setAttribute('data-tooltip', `Connected to ${API_BASE_URL}`);
             isBackendConnected = true;
             // Auto-hide after 5 seconds when connected
             setTimeout(() => {
-                if (isBackendConnected) {
+                if (isBackendConnected && statusEl) {
                     statusEl.classList.add('hidden');
                 }
             }, 5000);
             break;
         case 'disconnected':
             statusEl.classList.add('disconnected');
-            textEl.textContent = '🔴 Disconnected';
+            textEl.textContent = 'Disconnected';
             statusEl.setAttribute('data-tooltip', message || 'Click to retry connection');
             isBackendConnected = false;
             statusEl.classList.remove('hidden'); // Always show when disconnected
             break;
         case 'connecting':
             statusEl.classList.add('connecting');
-            textEl.textContent = '🟡 Connecting...';
+            textEl.textContent = 'Connecting...';
             statusEl.setAttribute('data-tooltip', 'Attempting to connect...');
             statusEl.classList.remove('hidden');
             break;
     }
+    console.log(`Connection status updated: ${status}`);
 }
 
 // Check backend health periodically
@@ -285,19 +292,15 @@ async function checkBackendHealth() {
         if (response.ok) {
             const data = await response.json();
             if (data.status === 'healthy') {
-                if (!isBackendConnected) {
-                    updateConnectionStatus('connected', 'Backend connected');
-                    showSuccessNotification('✅ Backend connection restored!');
-                }
+                // Always update to connected when healthy
+                updateConnectionStatus('connected', 'Backend connected');
                 return true;
             }
         }
         throw new Error('Health check failed');
     } catch (error) {
-        if (isBackendConnected) {
-            updateConnectionStatus('disconnected', 'Connection lost - Click to retry');
-            showErrorNotification('⚠️ Backend connection lost. Some features may not work.');
-        }
+        console.error('Health check error:', error.message);
+        updateConnectionStatus('disconnected', 'Connection lost - Click to retry');
         return false;
     }
 }
