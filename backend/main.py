@@ -3,13 +3,16 @@ Main FastAPI application with startup checks, middleware, and health endpoints
 """
 
 import sys
+import os
 from contextlib import asynccontextmanager
 from datetime import datetime
 from typing import Any
+from pathlib import Path
 
 from fastapi import FastAPI, Request, status
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
+from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 from slowapi import Limiter, _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
@@ -21,6 +24,10 @@ from backend.config import settings
 from backend.database import check_db_connection, init_db
 from backend.routers import users, polls, websocket, notifications, comments, api_keys, reactions, badges
 from backend.schemas import HealthCheck
+
+# Get the path to static files
+STATIC_DIR = Path(__file__).parent.parent / "frontend" / "public"
+FAVICON_PATH = STATIC_DIR / "images" / "fevicon.png"
 
 # Prometheus metrics
 REQUEST_COUNT = Counter("http_requests_total", "Total HTTP requests", ["method", "endpoint", "status"])
@@ -176,6 +183,16 @@ async def health_check():
         db_status = "unhealthy"
 
     return HealthCheck(status="healthy", database=db_status, timestamp=datetime.utcnow())
+
+
+# Favicon endpoint
+@app.get("/favicon.ico", include_in_schema=False)
+async def favicon():
+    """Serve favicon"""
+    if FAVICON_PATH.exists():
+        return FileResponse(FAVICON_PATH, media_type="image/png")
+    # Return a simple 204 No Content if favicon doesn't exist
+    return Response(status_code=204)
 
 
 # Simple ping endpoint (no DB required - for Render health checks)
