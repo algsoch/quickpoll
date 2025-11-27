@@ -73,10 +73,14 @@ class EmailService:
         
         # Prefer Resend if configured (better deliverability)
         if self._is_resend_configured:
+            print(f"[EmailService] Using Resend API")
             return await self._send_via_resend(to_email, subject, html_content, text_content)
         
         # Fall back to SMTP
-        return await self._send_via_smtp(to_email, subject, html_content, text_content)
+        print(f"[EmailService] Using SMTP: {self.smtp_host}:{self.smtp_port}")
+        result = await self._send_via_smtp(to_email, subject, html_content, text_content)
+        print(f"[EmailService] SMTP result: {result}")
+        return result
     
     async def _send_via_resend(
         self,
