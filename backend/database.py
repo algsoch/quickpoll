@@ -34,9 +34,14 @@ else:
     # PostgreSQL connection pool settings
     engine_options["pool_size"] = 5
     engine_options["max_overflow"] = 10
-    # Add SSL for production Azure PostgreSQL
+    engine_options["pool_timeout"] = 10  # 10 second timeout for getting connection from pool
+    # Add SSL and connection timeout for production Azure PostgreSQL
     if settings.is_production:
-        engine_options["connect_args"] = {"ssl": get_ssl_context()}
+        engine_options["connect_args"] = {
+            "ssl": get_ssl_context(),
+            "timeout": 10,  # 10 second connection timeout
+            "command_timeout": 30,  # 30 second query timeout
+        }
 
 engine = create_async_engine(
     settings.database_url,

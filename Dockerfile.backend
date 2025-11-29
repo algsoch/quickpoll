@@ -72,12 +72,14 @@ HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
 
 # Run with gunicorn for production
 # Use PORT env var from cloud provider (Azure/Render) or default to 8080
+# Reduced workers to 2 for Render free tier (512MB RAM)
 CMD gunicorn backend.main:app \
-    --workers 4 \
+    --workers 2 \
     --worker-class uvicorn.workers.UvicornWorker \
     --bind 0.0.0.0:${PORT:-8080} \
     --access-logfile - \
     --error-logfile - \
     --log-level info \
     --timeout 120 \
+    --graceful-timeout 30 \
     --keep-alive 5
