@@ -315,7 +315,7 @@ async function getAISuggestions(title, description, numOptions = 4) {
 ### Environment Variables (.env)
 ```bash
 # AI Configuration
-GEMINI_API_KEY=AIzaSyDLvgK7RnT6do4sdgJ8-fqcBPxpBxJSqyc
+GEMINI_API_KEY=your api key
 
 # Database
 DATABASE_URL=postgresql+asyncpg://...
