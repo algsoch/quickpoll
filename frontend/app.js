@@ -207,8 +207,8 @@ async function wakeUpAPI() {
             wakeupIndicator.innerHTML = '<span>✅ Server ready!</span>';
             setTimeout(() => { wakeupIndicator.style.display = 'none'; }, 1500);
         }
-        // Update connection status to connected
-        updateConnectionStatus('connected', 'Backend connected');
+        // Update connection status to connecting, will be updated by health check
+        updateConnectionStatus('connected', 'checking');
     } else {
         console.warn('⚠️ No API candidates responded after retries; using default:', API_BASE_URL);
         if (wakeupIndicator) {
@@ -221,7 +221,7 @@ async function wakeUpAPI() {
             // Don't auto-hide - let user click refresh
         }
         // Update connection status to disconnected
-        updateConnectionStatus('disconnected', 'Backend offline - Click to retry');
+        updateConnectionStatus('disconnected', 'disconnected');
     }
 
     return API_BASE_URL;
@@ -231,50 +231,54 @@ async function wakeUpAPI() {
 let connectionCheckInterval = null;
 let isBackendConnected = false;
 
-function updateConnectionStatus(status, message) {
+function updateConnectionStatus(backendStatus, databaseStatus, backendMessage, databaseMessage) {
     const statusEl = document.getElementById('connectionStatus');
     if (!statusEl) {
         console.warn('Connection status element not found');
         return;
     }
     
-    const textEl = statusEl.querySelector('.connection-text');
-    if (!textEl) {
-        console.warn('Connection text element not found');
+    const backendDot = statusEl.querySelector('.backend-dot');
+    const backendText = statusEl.querySelector('.backend-text');
+    const databaseDot = statusEl.querySelector('.database-dot');
+    const databaseText = statusEl.querySelector('.database-text');
+    
+    if (!backendDot || !backendText || !databaseDot || !databaseText) {
+        console.warn('Connection status elements not found');
         return;
     }
     
-    // Remove all status classes
-    statusEl.classList.remove('connected', 'disconnected', 'connecting', 'hidden');
+    // Update backend status
+    backendDot.className = 'connection-dot backend-dot ' + backendStatus;
+    backendText.className = 'connection-text backend-text ' + backendStatus;
+    backendText.textContent = backendStatus === 'connected' ? 'Connected' : 
+                             backendStatus === 'connecting' ? 'Connecting...' : 'Disconnected';
     
-    switch (status) {
-        case 'connected':
-            statusEl.classList.add('connected');
-            textEl.textContent = 'Connected';
-            statusEl.setAttribute('data-tooltip', `Connected to ${API_BASE_URL}`);
-            isBackendConnected = true;
-            // Auto-hide after 5 seconds when connected
-            setTimeout(() => {
-                if (isBackendConnected && statusEl) {
-                    statusEl.classList.add('hidden');
-                }
-            }, 5000);
-            break;
-        case 'disconnected':
-            statusEl.classList.add('disconnected');
-            textEl.textContent = 'Disconnected';
-            statusEl.setAttribute('data-tooltip', message || 'Click to retry connection');
-            isBackendConnected = false;
-            statusEl.classList.remove('hidden'); // Always show when disconnected
-            break;
-        case 'connecting':
-            statusEl.classList.add('connecting');
-            textEl.textContent = 'Connecting...';
-            statusEl.setAttribute('data-tooltip', 'Attempting to connect...');
-            statusEl.classList.remove('hidden');
-            break;
+    // Update database status
+    databaseDot.className = 'connection-dot database-dot ' + databaseStatus;
+    databaseText.className = 'connection-text database-text ' + databaseStatus;
+    databaseText.textContent = databaseStatus === 'connected' ? 'Connected' : 
+                              databaseStatus === 'checking' ? 'Checking...' : 'Disconnected';
+    
+    // Update tooltip
+    const tooltip = `Backend: ${backendStatus}\nDatabase: ${databaseStatus}`;
+    statusEl.setAttribute('data-tooltip', tooltip);
+    
+    // Store connection state
+    isBackendConnected = backendStatus === 'connected';
+    
+    // Auto-hide when both are connected
+    if (backendStatus === 'connected' && databaseStatus === 'connected') {
+        setTimeout(() => {
+            if (isBackendConnected && statusEl) {
+                statusEl.classList.add('hidden');
+            }
+        }, 5000);
+    } else {
+        statusEl.classList.remove('hidden');
     }
-    console.log(`Connection status updated: ${status}`);
+    
+    console.log(`Connection status - Backend: ${backendStatus}, Database: ${databaseStatus}`);
 }
 
 // Check backend health periodically
@@ -291,16 +295,16 @@ async function checkBackendHealth() {
         
         if (response.ok) {
             const data = await response.json();
-            if (data.status === 'healthy') {
-                // Always update to connected when healthy
-                updateConnectionStatus('connected', 'Backend connected');
-                return true;
-            }
+            const backendStatus = data.status === 'healthy' ? 'connected' : 'disconnected';
+            const databaseStatus = data.database === 'healthy' ? 'connected' : 'disconnected';
+            
+            updateConnectionStatus(backendStatus, databaseStatus);
+            return backendStatus === 'connected';
         }
         throw new Error('Health check failed');
     } catch (error) {
         console.error('Health check error:', error.message);
-        updateConnectionStatus('disconnected', 'Connection lost - Click to retry');
+        updateConnectionStatus('disconnected', 'disconnected', 'Connection lost', 'Database unavailable');
         return false;
     }
 }
@@ -320,7 +324,7 @@ function setupConnectionStatusClickHandler() {
     if (statusEl) {
         statusEl.addEventListener('click', async () => {
             if (!isBackendConnected) {
-                updateConnectionStatus('connecting', 'Retrying connection...');
+                updateConnectionStatus('connecting', 'checking', 'Retrying...', 'Checking...');
                 const success = await checkBackendHealth();
                 if (!success) {
                     // Try full wake-up process

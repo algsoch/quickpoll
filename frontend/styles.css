@@ -63,16 +63,28 @@
     background: var(--surface);
     border: 1px solid var(--border);
     border-radius: 30px;
-    padding: 8px 16px;
+    padding: 10px 16px;
     display: flex;
-    align-items: center;
-    gap: 8px;
+    flex-direction: column;
+    gap: 6px;
     z-index: 9999;
-    font-size: 13px;
+    font-size: 12px;
     font-weight: 500;
     box-shadow: var(--shadow-lg);
     transition: all 0.3s ease;
     cursor: pointer;
+}
+
+.connection-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.connection-label {
+    color: var(--text-secondary);
+    font-size: 11px;
+    min-width: 28px;
 }
 
 .connection-status:hover {
@@ -87,25 +99,41 @@
 }
 
 .connection-dot {
-    width: 10px;
-    height: 10px;
+    width: 8px;
+    height: 8px;
     border-radius: 50%;
     background: #fbbf24;
     animation: pulse 1.5s ease-in-out infinite;
 }
 
-.connection-status.connected .connection-dot {
+.backend-dot.connected {
     background: #22c55e;
     animation: none;
-    box-shadow: 0 0 8px rgba(34, 197, 94, 0.5);
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
 }
 
-.connection-status.disconnected .connection-dot {
+.backend-dot.disconnected {
     background: #ef4444;
     animation: pulse 1s ease-in-out infinite;
 }
 
-.connection-status.connecting .connection-dot {
+.backend-dot.connecting {
+    background: #fbbf24;
+    animation: pulse 0.8s ease-in-out infinite;
+}
+
+.database-dot.connected {
+    background: #22c55e;
+    animation: none;
+    box-shadow: 0 0 6px rgba(34, 197, 94, 0.5);
+}
+
+.database-dot.disconnected {
+    background: #ef4444;
+    animation: pulse 1s ease-in-out infinite;
+}
+
+.database-dot.checking {
     background: #fbbf24;
     animation: pulse 0.8s ease-in-out infinite;
 }
@@ -117,13 +145,16 @@
 
 .connection-text {
     color: var(--text-secondary);
+    font-size: 11px;
 }
 
-.connection-status.connected .connection-text {
+.backend-text.connected,
+.database-text.connected {
     color: #22c55e;
 }
 
-.connection-status.disconnected .connection-text {
+.backend-text.disconnected,
+.database-text.disconnected {
     color: #ef4444;
 }
 
