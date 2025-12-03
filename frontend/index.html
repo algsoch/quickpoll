@@ -36,8 +36,16 @@
     
     <!-- Backend Connection Status Indicator -->
     <div id="connectionStatus" class="connection-status">
-        <div class="connection-dot"></div>
-        <span class="connection-text">Connecting...</span>
+        <div class="connection-item">
+            <div class="connection-dot backend-dot"></div>
+            <span class="connection-label">API:</span>
+            <span class="connection-text backend-text">Connecting...</span>
+        </div>
+        <div class="connection-item">
+            <div class="connection-dot database-dot"></div>
+            <span class="connection-label">DB:</span>
+            <span class="connection-text database-text">Checking...</span>
+        </div>
     </div>
     
     <div id="app">
